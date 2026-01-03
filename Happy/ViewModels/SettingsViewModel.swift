@@ -66,6 +66,31 @@ final class SettingsViewModel {
         set { UserDefaults.standard.set(newValue, forKey: "serverURL") }
     }
 
+    // MARK: - Privacy Settings (HAP-727)
+
+    /// Whether to show online status to friends.
+    /// When disabled, user appears offline to all friends.
+    var showOnlineStatus: Bool {
+        get {
+            // Default to true if not set
+            if UserDefaults.standard.object(forKey: "showOnlineStatus") == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: "showOnlineStatus")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "showOnlineStatus")
+            // Sync to server when authenticated
+            Task { await syncPrivacySettingsToServer() }
+        }
+    }
+
+    /// Whether privacy settings are being synced.
+    var isSyncingPrivacy: Bool = false
+
+    /// Error message if privacy sync fails.
+    var privacySyncError: String?
+
     // MARK: - Private Properties
 
     private let authService: AuthService
@@ -99,6 +124,29 @@ final class SettingsViewModel {
         launchAtLogin = false
         themePreference = .system
         serverURL = "https://api.happy.engineering"
+        showOnlineStatus = true
+    }
+
+    /// Load privacy settings from server.
+    func loadPrivacySettings() async {
+        guard isAuthenticated else { return }
+
+        isSyncingPrivacy = true
+        privacySyncError = nil
+
+        do {
+            let settings = try await fetchPrivacySettings()
+            await MainActor.run {
+                // Update local cache without triggering sync
+                UserDefaults.standard.set(settings.showOnlineStatus, forKey: "showOnlineStatus")
+                self.isSyncingPrivacy = false
+            }
+        } catch {
+            await MainActor.run {
+                self.privacySyncError = error.localizedDescription
+                self.isSyncingPrivacy = false
+            }
+        }
     }
 
     // MARK: - Private Methods
@@ -107,6 +155,78 @@ final class SettingsViewModel {
         // TODO: Use SMAppService or LSSharedFileList to manage login items
         // This requires proper entitlements
     }
+
+    /// Sync privacy settings to server.
+    private func syncPrivacySettingsToServer() async {
+        guard isAuthenticated else { return }
+
+        await MainActor.run { isSyncingPrivacy = true }
+
+        do {
+            let settings = PrivacySettings(showOnlineStatus: showOnlineStatus)
+            _ = try await updatePrivacySettings(settings)
+            await MainActor.run {
+                self.privacySyncError = nil
+                self.isSyncingPrivacy = false
+            }
+        } catch {
+            await MainActor.run {
+                self.privacySyncError = error.localizedDescription
+                self.isSyncingPrivacy = false
+            }
+        }
+    }
+
+    /// Fetch privacy settings from server.
+    private func fetchPrivacySettings() async throws -> PrivacySettings {
+        guard let token = authService.account?.token else {
+            throw APIError.invalidResponse
+        }
+
+        let url = URL(string: "\(serverURL)/v1/users/me/privacy")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.httpError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+
+        return try JSONDecoder().decode(PrivacySettings.self, from: data)
+    }
+
+    /// Update privacy settings on server.
+    private func updatePrivacySettings(_ settings: PrivacySettings) async throws -> PrivacySettings {
+        guard let token = authService.account?.token else {
+            throw APIError.invalidResponse
+        }
+
+        let url = URL(string: "\(serverURL)/v1/users/me/privacy")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(settings)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.httpError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+
+        return try JSONDecoder().decode(PrivacySettings.self, from: data)
+    }
+}
+
+// MARK: - Privacy Settings (HAP-727)
+
+/// Privacy settings structure for API communication.
+struct PrivacySettings: Codable {
+    let showOnlineStatus: Bool
 }
 
 // MARK: - Supporting Types
@@ -115,6 +235,7 @@ final class SettingsViewModel {
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case account = "Account"
+    case privacy = "Privacy"
     case notifications = "Notifications"
     case advanced = "Advanced"
 
@@ -124,6 +245,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "gearshape"
         case .account: return "person.circle"
+        case .privacy: return "eye.slash"
         case .notifications: return "bell"
         case .advanced: return "wrench.and.screwdriver"
         }

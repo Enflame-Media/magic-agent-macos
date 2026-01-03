@@ -28,6 +28,12 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.account)
 
+            privacyTab
+                .tabItem {
+                    Label("Privacy", systemImage: "eye.slash")
+                }
+                .tag(SettingsTab.privacy)
+
             notificationsTab
                 .tabItem {
                     Label("Notifications", systemImage: "bell")
@@ -119,6 +125,55 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
+        }
+    }
+
+    // MARK: - Privacy Tab (HAP-727)
+
+    @ViewBuilder
+    private var privacyTab: some View {
+        Form {
+            Section("Online Status") {
+                Toggle("Show online status to friends", isOn: $viewModel.showOnlineStatus)
+                    .disabled(viewModel.isSyncingPrivacy)
+
+                if viewModel.showOnlineStatus {
+                    Text("Friends can see when you're online")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("You appear offline to all friends")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if viewModel.isSyncingPrivacy {
+                    HStack {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Syncing...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let error = viewModel.privacySyncError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+
+            Section {
+                Text("When disabled, you'll appear offline to all friends, but you can still see when they're online.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .task {
+            await viewModel.loadPrivacySettings()
         }
     }
 
