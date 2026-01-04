@@ -195,8 +195,14 @@ struct FriendsView: View {
         Button {
             shareSessionWithFriend(friend)
         } label: {
-            Label("Share Session...", systemImage: "square.and.arrow.up")
+            Label(
+                sessionsViewModel.hasSelectedSession
+                    ? "Share Session..."
+                    : "Share Session... (select session first)",
+                systemImage: "square.and.arrow.up"
+            )
         }
+        .disabled(!sessionsViewModel.hasSelectedSession)
 
         Divider()
 
