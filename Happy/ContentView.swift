@@ -24,7 +24,7 @@ struct ContentView: View {
             case .awaitingPairing:
                 pairingView
             case .authenticated:
-                SessionsView()
+                MainView()
             case .error(let message):
                 errorView(message)
             }

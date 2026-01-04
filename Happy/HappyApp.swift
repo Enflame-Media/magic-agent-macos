@@ -61,6 +61,25 @@ struct HappyApp: App {
                 .keyboardShortcut("e", modifiers: [.command, .shift])
             }
 
+            // Friends menu
+            CommandMenu("Friends") {
+                Button("Show Friends") {
+                    NotificationCenter.default.post(name: .showFriends, object: nil)
+                }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+
+                Button("Add Friend...") {
+                    NotificationCenter.default.post(name: .addFriend, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: [.command, .option])
+
+                Divider()
+
+                Button("Refresh Friends") {
+                    NotificationCenter.default.post(name: .refreshFriends, object: nil)
+                }
+            }
+
             // Connection menu
             CommandMenu("Connection") {
                 Button("Connect") {
@@ -133,10 +152,17 @@ struct CLIPairingInfo: Codable {
 // MARK: - Notification Names
 
 extension Notification.Name {
+    // Session notifications
     static let refreshSessions = Notification.Name("refreshSessions")
     static let copySession = Notification.Name("copySession")
     static let exportSession = Notification.Name("exportSession")
+
+    // Connection notifications
     static let connect = Notification.Name("connect")
     static let disconnect = Notification.Name("disconnect")
     static let showConnectionStatus = Notification.Name("showConnectionStatus")
+
+    // Friends notifications
+    static let addFriend = Notification.Name("addFriend")
+    static let refreshFriends = Notification.Name("refreshFriends")
 }
