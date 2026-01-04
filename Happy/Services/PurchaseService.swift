@@ -9,6 +9,10 @@
 import Foundation
 import StoreKit
 
+#if canImport(RevenueCat)
+import RevenueCat
+#endif
+
 /// Service for managing in-app purchases and subscriptions using RevenueCat.
 ///
 /// This service handles:
@@ -17,11 +21,15 @@ import StoreKit
 /// - Processing purchases
 /// - Restoring purchases
 /// - Checking entitlements
+/// - Subscription status sync across devices
 ///
-/// Note: Requires RevenueCat SDK to be added via Swift Package Manager.
-/// Add: https://github.com/RevenueCat/purchases-ios
+/// ## Requirements
+/// Add RevenueCat SDK via Swift Package Manager:
+/// ```
+/// https://github.com/RevenueCat/purchases-ios
+/// ```
 ///
-/// @example
+/// ## Usage
 /// ```swift
 /// let service = PurchaseService.shared
 /// await service.configure(apiKey: "your_api_key")
@@ -117,11 +125,24 @@ final class PurchaseService {
 
         status = .loading
 
-        // Note: In production with RevenueCat SDK installed:
-        // Purchases.configure(withAPIKey: apiKey, appUserID: appUserID)
-        // Purchases.shared.delegate = self
+        #if canImport(RevenueCat)
+        // Configure RevenueCat SDK
+        Purchases.logLevel = .debug
 
+        if let appUserID = appUserID {
+            Purchases.configure(withAPIKey: apiKey, appUserID: appUserID)
+        } else {
+            Purchases.configure(withAPIKey: apiKey)
+        }
+
+        // Listen for customer info updates
+        Purchases.shared.delegate = PurchaseDelegateHandler.shared
+
+        print("[Purchases] Configured with apiKey, appUserID: \(appUserID ?? "anonymous")")
+        #else
+        print("[Purchases] RevenueCat SDK not available. Add via Swift Package Manager.")
         print("[Purchases] Would configure with apiKey, appUserID: \(appUserID ?? "nil")")
+        #endif
 
         purchasesConfigured = true
         isConfigured = true
@@ -142,24 +163,27 @@ final class PurchaseService {
             return nil
         }
 
+        #if canImport(RevenueCat)
         do {
-            // Note: In production with RevenueCat SDK:
-            // let info = try await Purchases.shared.customerInfo()
-            // return transformCustomerInfo(info)
-
-            // Placeholder implementation
-            let info = CustomerInfo(
-                activeSubscriptions: [],
-                entitlements: [:],
-                originalAppUserId: "user-id",
-                requestDate: Date()
-            )
+            let rcInfo = try await Purchases.shared.customerInfo()
+            let info = transformCustomerInfo(rcInfo)
             customerInfo = info
             return info
         } catch {
             lastError = .networkError(error.localizedDescription)
             return nil
         }
+        #else
+        // Placeholder implementation when SDK not available
+        let info = CustomerInfo(
+            activeSubscriptions: [],
+            entitlements: [:],
+            originalAppUserId: "user-id",
+            requestDate: Date()
+        )
+        customerInfo = info
+        return info
+        #endif
     }
 
     /// Fetch available offerings.
@@ -170,19 +194,41 @@ final class PurchaseService {
             return nil
         }
 
+        #if canImport(RevenueCat)
         do {
-            // Note: In production with RevenueCat SDK:
-            // let offerings = try await Purchases.shared.offerings()
-            // return transformOfferings(offerings)
-
-            // Placeholder implementation
-            let result = Offerings(current: nil, all: [:])
+            let rcOfferings = try await Purchases.shared.offerings()
+            let result = transformOfferings(rcOfferings)
             offerings = result
             return result
         } catch {
             lastError = .networkError(error.localizedDescription)
             return nil
         }
+        #else
+        // Placeholder implementation when SDK not available
+        let result = Offerings(current: nil, all: [:])
+        offerings = result
+        return result
+        #endif
+    }
+
+    /// Get specific products by their identifiers.
+    /// - Parameter productIds: Array of product identifiers to fetch.
+    /// - Returns: Array of matching products.
+    func getProducts(productIds: [String]) async -> [Product] {
+        guard isConfigured else {
+            lastError = .notConfigured
+            return []
+        }
+
+        #if canImport(RevenueCat)
+        do {
+            let rcProducts = await Purchases.shared.products(productIds)
+            return rcProducts.map { transformProduct($0) }
+        }
+        #else
+        return []
+        #endif
     }
 
     // MARK: - Purchase Operations
@@ -197,24 +243,77 @@ final class PurchaseService {
 
         status = .purchasing
 
+        #if canImport(RevenueCat)
         do {
-            // Note: In production with RevenueCat SDK:
-            // let (_, customerInfo, _) = try await Purchases.shared.purchase(package: package.nativePackage)
-            // self.customerInfo = transformCustomerInfo(customerInfo)
-            // return self.customerInfo!
+            // Get the native RevenueCat package
+            guard let rcPackage = await findNativePackage(for: package) else {
+                throw PurchaseError.productNotFound(package.identifier)
+            }
 
-            print("[Purchases] Would purchase package: \(package.identifier)")
+            let (_, customerInfo, _) = try await Purchases.shared.purchase(package: rcPackage)
+            let info = transformCustomerInfo(customerInfo)
+            self.customerInfo = info
+            status = .success
 
-            // Simulate successful purchase
-            let info = CustomerInfo(
-                activeSubscriptions: [package.product.identifier],
-                entitlements: ["pro": Entitlement(isActive: true, identifier: "pro")],
-                originalAppUserId: "user-id",
-                requestDate: Date()
+            // Post notification for analytics
+            NotificationCenter.default.post(
+                name: .purchaseCompleted,
+                object: nil,
+                userInfo: ["package": package.identifier]
             )
 
-            customerInfo = info
+            return info
+        } catch let error as RevenueCat.ErrorCode {
+            status = .error
+            let purchaseError = mapRevenueCatError(error)
+            lastError = purchaseError
+            throw purchaseError
+        } catch {
+            status = .error
+            let purchaseError = mapStoreKitError(error)
+            lastError = purchaseError
+            throw purchaseError
+        }
+        #else
+        print("[Purchases] Would purchase package: \(package.identifier)")
+
+        // Simulate successful purchase for development
+        let info = CustomerInfo(
+            activeSubscriptions: [package.product.identifier],
+            entitlements: ["pro": Entitlement(isActive: true, identifier: "pro")],
+            originalAppUserId: "user-id",
+            requestDate: Date()
+        )
+
+        customerInfo = info
+        status = .success
+        return info
+        #endif
+    }
+
+    /// Purchase a product directly.
+    /// - Parameter product: The product to purchase.
+    /// - Returns: The updated customer info after purchase.
+    func purchase(product: Product) async throws -> CustomerInfo {
+        guard isConfigured else {
+            throw PurchaseError.notConfigured
+        }
+
+        status = .purchasing
+
+        #if canImport(RevenueCat)
+        do {
+            // Get the native StoreKit product
+            let products = await Purchases.shared.products([product.identifier])
+            guard let rcProduct = products.first else {
+                throw PurchaseError.productNotFound(product.identifier)
+            }
+
+            let (_, customerInfo, _) = try await Purchases.shared.purchase(product: rcProduct)
+            let info = transformCustomerInfo(customerInfo)
+            self.customerInfo = info
             status = .success
+
             return info
         } catch {
             status = .error
@@ -222,6 +321,20 @@ final class PurchaseService {
             lastError = purchaseError
             throw purchaseError
         }
+        #else
+        print("[Purchases] Would purchase product: \(product.identifier)")
+
+        let info = CustomerInfo(
+            activeSubscriptions: [product.identifier],
+            entitlements: ["pro": Entitlement(isActive: true, identifier: "pro")],
+            originalAppUserId: "user-id",
+            requestDate: Date()
+        )
+
+        customerInfo = info
+        status = .success
+        return info
+        #endif
     }
 
     /// Restore previous purchases.
@@ -233,31 +346,51 @@ final class PurchaseService {
 
         status = .restoring
 
+        #if canImport(RevenueCat)
         do {
-            // Note: In production with RevenueCat SDK:
-            // let customerInfo = try await Purchases.shared.restorePurchases()
-            // self.customerInfo = transformCustomerInfo(customerInfo)
-            // return self.customerInfo!
-
-            let info = try await getCustomerInfo()
+            let rcInfo = try await Purchases.shared.restorePurchases()
+            let info = transformCustomerInfo(rcInfo)
+            self.customerInfo = info
             status = .success
-            return info ?? CustomerInfo(
-                activeSubscriptions: [],
-                entitlements: [:],
-                originalAppUserId: "user-id",
-                requestDate: Date()
+
+            // Post notification for analytics
+            NotificationCenter.default.post(
+                name: .purchaseRestored,
+                object: nil
             )
+
+            return info
         } catch {
             status = .error
             let purchaseError = PurchaseError.restoreFailed(error.localizedDescription)
             lastError = purchaseError
             throw purchaseError
         }
+        #else
+        let info = try await getCustomerInfo()
+        status = .success
+        return info ?? CustomerInfo(
+            activeSubscriptions: [],
+            entitlements: [:],
+            originalAppUserId: "user-id",
+            requestDate: Date()
+        )
+        #endif
     }
 
-    /// Sync purchases with RevenueCat.
+    /// Sync purchases with RevenueCat backend.
+    /// Useful for ensuring subscription status is current across devices.
     func syncPurchases() async {
+        #if canImport(RevenueCat)
+        do {
+            try await Purchases.shared.syncPurchases()
+            _ = await getCustomerInfo()
+        } catch {
+            print("[Purchases] Sync failed: \(error.localizedDescription)")
+        }
+        #else
         _ = await getCustomerInfo()
+        #endif
     }
 
     // MARK: - Entitlements
@@ -267,6 +400,14 @@ final class PurchaseService {
     /// - Returns: Whether the entitlement is active.
     func hasEntitlement(_ entitlementId: String) -> Bool {
         customerInfo?.entitlements[entitlementId]?.isActive ?? false
+    }
+
+    /// Async check for entitlement (fetches fresh data).
+    /// - Parameter entitlementId: The entitlement identifier to check.
+    /// - Returns: Whether the entitlement is active.
+    func checkEntitlement(_ entitlementId: String) async -> Bool {
+        await getCustomerInfo()
+        return hasEntitlement(entitlementId)
     }
 
     // MARK: - Error Handling
@@ -289,7 +430,141 @@ final class PurchaseService {
         lastError = nil
     }
 
+    // MARK: - User Management
+
+    /// Log in a specific user to RevenueCat.
+    /// - Parameter appUserID: The user ID to log in.
+    func logIn(appUserID: String) async throws {
+        #if canImport(RevenueCat)
+        let (customerInfo, _) = try await Purchases.shared.logIn(appUserID)
+        self.customerInfo = transformCustomerInfo(customerInfo)
+        #endif
+    }
+
+    /// Log out the current user from RevenueCat.
+    func logOut() async throws {
+        #if canImport(RevenueCat)
+        let customerInfo = try await Purchases.shared.logOut()
+        self.customerInfo = transformCustomerInfo(customerInfo)
+        #else
+        self.customerInfo = nil
+        #endif
+    }
+
     // MARK: - Private Helpers
+
+    #if canImport(RevenueCat)
+    /// Transform RevenueCat CustomerInfo to our domain model.
+    private func transformCustomerInfo(_ rcInfo: RevenueCat.CustomerInfo) -> CustomerInfo {
+        var entitlements: [String: Entitlement] = [:]
+
+        for (key, rcEntitlement) in rcInfo.entitlements.all {
+            entitlements[key] = Entitlement(
+                isActive: rcEntitlement.isActive,
+                identifier: rcEntitlement.identifier
+            )
+        }
+
+        return CustomerInfo(
+            activeSubscriptions: Array(rcInfo.activeSubscriptions),
+            entitlements: entitlements,
+            originalAppUserId: rcInfo.originalAppUserId,
+            requestDate: rcInfo.requestDate ?? Date()
+        )
+    }
+
+    /// Transform RevenueCat Offerings to our domain model.
+    private func transformOfferings(_ rcOfferings: RevenueCat.Offerings) -> Offerings {
+        var all: [String: Offering] = [:]
+
+        for (key, rcOffering) in rcOfferings.all {
+            all[key] = transformOffering(rcOffering)
+        }
+
+        return Offerings(
+            current: rcOfferings.current.map { transformOffering($0) },
+            all: all
+        )
+    }
+
+    /// Transform a single RevenueCat Offering to our domain model.
+    private func transformOffering(_ rcOffering: RevenueCat.Offering) -> Offering {
+        Offering(
+            id: rcOffering.identifier,
+            availablePackages: rcOffering.availablePackages.map { transformPackage($0) }
+        )
+    }
+
+    /// Transform a RevenueCat Package to our domain model.
+    private func transformPackage(_ rcPackage: RevenueCat.Package) -> Package {
+        Package(
+            id: rcPackage.identifier,
+            packageType: transformPackageType(rcPackage.packageType),
+            product: transformProduct(rcPackage.storeProduct)
+        )
+    }
+
+    /// Transform a StoreProduct to our domain model.
+    private func transformProduct(_ storeProduct: StoreProduct) -> Product {
+        Product(
+            id: storeProduct.productIdentifier,
+            title: storeProduct.localizedTitle,
+            description: storeProduct.localizedDescription,
+            priceString: storeProduct.localizedPriceString,
+            price: storeProduct.price,
+            currencyCode: storeProduct.currencyCode ?? "USD"
+        )
+    }
+
+    /// Transform RevenueCat PackageType to our domain model.
+    private func transformPackageType(_ rcType: RevenueCat.PackageType) -> PackageType {
+        switch rcType {
+        case .monthly:
+            return .monthly
+        case .annual:
+            return .annual
+        case .weekly:
+            return .weekly
+        case .lifetime:
+            return .lifetime
+        default:
+            return .custom
+        }
+    }
+
+    /// Find the native RevenueCat package for our domain package.
+    private func findNativePackage(for package: Package) async -> RevenueCat.Package? {
+        guard let rcOfferings = try? await Purchases.shared.offerings() else {
+            return nil
+        }
+
+        for rcOffering in rcOfferings.all.values {
+            if let rcPackage = rcOffering.availablePackages.first(where: { $0.identifier == package.identifier }) {
+                return rcPackage
+            }
+        }
+
+        return nil
+    }
+
+    /// Map RevenueCat error codes to our domain errors.
+    private func mapRevenueCatError(_ error: RevenueCat.ErrorCode) -> PurchaseError {
+        switch error {
+        case .purchaseCancelledError:
+            return .cancelled
+        case .productNotAvailableForPurchaseError:
+            return .productNotFound("Product not available")
+        case .networkError:
+            return .networkError("Network connection error")
+        case .purchaseNotAllowedError:
+            return .notConfigured
+        case .productAlreadyPurchasedError:
+            return .alreadyOwned
+        default:
+            return .unknown(error.localizedDescription)
+        }
+    }
+    #endif
 
     private func mapStoreKitError(_ error: Error) -> PurchaseError {
         // Handle StoreKit-specific errors
@@ -307,6 +582,41 @@ final class PurchaseService {
         return .unknown(error.localizedDescription)
     }
 }
+
+// MARK: - RevenueCat Delegate Handler
+
+#if canImport(RevenueCat)
+/// Delegate handler for RevenueCat customer info updates.
+@MainActor
+final class PurchaseDelegateHandler: NSObject, PurchasesDelegate {
+    static let shared = PurchaseDelegateHandler()
+
+    nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: RevenueCat.CustomerInfo) {
+        Task { @MainActor in
+            // Update the shared service with new customer info
+            let info = CustomerInfo(
+                activeSubscriptions: Array(customerInfo.activeSubscriptions),
+                entitlements: customerInfo.entitlements.all.reduce(into: [:]) { result, pair in
+                    result[pair.key] = Entitlement(
+                        isActive: pair.value.isActive,
+                        identifier: pair.value.identifier
+                    )
+                },
+                originalAppUserId: customerInfo.originalAppUserId,
+                requestDate: customerInfo.requestDate ?? Date()
+            )
+            PurchaseService.shared.customerInfo = info
+
+            // Post notification for UI updates
+            NotificationCenter.default.post(
+                name: .customerInfoUpdated,
+                object: nil,
+                userInfo: ["customerInfo": info]
+            )
+        }
+    }
+}
+#endif
 
 // MARK: - Supporting Types
 
@@ -417,4 +727,17 @@ enum RevenueCatKeys {
         // Would load from Info.plist or secure configuration
         ProcessInfo.processInfo.environment["REVENUECAT_MACOS_KEY"] ?? ""
     }
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when a purchase is completed successfully.
+    static let purchaseCompleted = Notification.Name("purchaseCompleted")
+
+    /// Posted when purchases are restored successfully.
+    static let purchaseRestored = Notification.Name("purchaseRestored")
+
+    /// Posted when customer info is updated from RevenueCat.
+    static let customerInfoUpdated = Notification.Name("customerInfoUpdated")
 }

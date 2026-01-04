@@ -258,8 +258,38 @@ class SessionViewModel: ObservableObject {
 | Sessions List | ✅ | NavigationSplitView with sidebar |
 | Session Detail | ✅ | Message display with tool uses |
 | Settings | ✅ | Tabbed preferences via Settings scene |
-| Menu Commands | ✅ | File, Session, Connection menus |
-| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, etc. |
+| Menu Commands | ✅ | File, Session, Connection, Subscription menus |
+| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, ⇧⌘U upgrade, etc. |
+| In-App Purchases | ✅ | RevenueCat SDK integration (HAP-707) |
+
+### In-App Purchases (HAP-707)
+
+The app includes RevenueCat integration for subscription management:
+
+**Key Components:**
+- `PurchaseService.swift` - RevenueCat SDK integration with StoreKit 2
+- `PurchaseViewModel.swift` - Observable view model for purchase UI
+- `PaywallView.swift` - Native purchase sheet presentation
+- Settings → Subscription tab for status and management
+
+**Setup Requirements:**
+1. Add RevenueCat SDK via Swift Package Manager:
+   ```
+   https://github.com/RevenueCat/purchases-ios
+   ```
+2. Set environment variable: `REVENUECAT_MACOS_KEY`
+
+**Features:**
+- Configure RevenueCat with API key
+- Fetch offerings and products
+- Purchase packages with proper error handling
+- Restore purchases functionality
+- Sync purchases across devices
+- Entitlement checking for premium features
+- Customer info delegate for real-time updates
+
+**Conditional Compilation:**
+The code uses `#if canImport(RevenueCat)` for graceful fallback when SDK is not installed, enabling development without the SDK.
 
 ### Next Steps (Phase 4)
 

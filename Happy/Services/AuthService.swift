@@ -224,6 +224,8 @@ struct AuthenticatedAccount: Identifiable, Codable {
     let email: String?
     let name: String?
     let createdAt: Date
+    /// Authentication token for API requests.
+    var token: String?
 }
 
 /// Represents a connected CLI machine.

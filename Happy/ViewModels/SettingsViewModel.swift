@@ -235,6 +235,7 @@ struct PrivacySettings: Codable {
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case account = "Account"
+    case subscription = "Subscription"
     case privacy = "Privacy"
     case notifications = "Notifications"
     case advanced = "Advanced"
@@ -245,6 +246,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "gearshape"
         case .account: return "person.circle"
+        case .subscription: return "creditcard"
         case .privacy: return "eye.slash"
         case .notifications: return "bell"
         case .advanced: return "wrench.and.screwdriver"

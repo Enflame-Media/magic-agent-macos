@@ -17,8 +17,14 @@ struct HappyApp: App {
     /// Shared auth service for the app.
     @State private var authService = AuthService.shared
 
+    /// Shared purchase service for the app.
+    @State private var purchaseService = PurchaseService.shared
+
     /// Whether the QR scanner sheet is shown.
     @State private var showingQRScanner = false
+
+    /// Whether the paywall sheet is shown.
+    @State private var showingPaywall = false
 
     /// The main application body defining scenes and commands.
     var body: some Scene {
@@ -26,10 +32,17 @@ struct HappyApp: App {
         WindowGroup {
             ContentView()
                 .environment(authService)
+                .environment(purchaseService)
                 .sheet(isPresented: $showingQRScanner) {
                     QRScannerView { qrData in
                         handleQRScan(qrData)
                     }
+                }
+                .sheet(isPresented: $showingPaywall) {
+                    PaywallView()
+                }
+                .task {
+                    await configurePurchases()
                 }
         }
         .commands {
@@ -99,6 +112,21 @@ struct HappyApp: App {
                 }
             }
 
+            // Subscription menu
+            CommandMenu("Subscription") {
+                Button("Upgrade to Pro...") {
+                    showingPaywall = true
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift])
+                .disabled(purchaseService.isPro)
+
+                Button("Restore Purchases") {
+                    Task {
+                        try? await purchaseService.restorePurchases()
+                    }
+                }
+            }
+
             // Help menu additions
             CommandGroup(after: .help) {
                 Divider()
@@ -137,6 +165,28 @@ struct HappyApp: App {
             )
         }
     }
+
+    // MARK: - Purchase Configuration
+
+    /// Configure RevenueCat purchases on app launch.
+    private func configurePurchases() async {
+        let apiKey = RevenueCatKeys.macOS
+
+        guard !apiKey.isEmpty else {
+            print("[App] RevenueCat API key not configured. Set REVENUECAT_MACOS_KEY environment variable.")
+            return
+        }
+
+        // Get user ID from auth service if authenticated
+        // Use machine ID or account ID as the RevenueCat app user ID
+        let appUserID: String? = authService.state == .authenticated
+            ? (authService.machine?.id ?? authService.account?.id)
+            : nil
+
+        await purchaseService.configure(apiKey: apiKey, appUserID: appUserID)
+
+        print("[App] RevenueCat configured successfully")
+    }
 }
 
 // MARK: - CLI Pairing Info
@@ -165,4 +215,8 @@ extension Notification.Name {
     // Friends notifications
     static let addFriend = Notification.Name("addFriend")
     static let refreshFriends = Notification.Name("refreshFriends")
+    static let showFriends = Notification.Name("showFriends")
+
+    // Subscription notifications
+    static let showPaywall = Notification.Name("showPaywall")
 }

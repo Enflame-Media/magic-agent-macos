@@ -13,6 +13,7 @@ import SwiftUI
 /// Accessible via Preferences menu item (⌘,) using the Settings scene.
 struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
+    @State private var purchaseViewModel = PurchaseViewModel()
 
     var body: some View {
         TabView(selection: $viewModel.selectedTab) {
@@ -27,6 +28,12 @@ struct SettingsView: View {
                     Label("Account", systemImage: "person.circle")
                 }
                 .tag(SettingsTab.account)
+
+            subscriptionTab
+                .tabItem {
+                    Label("Subscription", systemImage: "creditcard")
+                }
+                .tag(SettingsTab.subscription)
 
             privacyTab
                 .tabItem {
@@ -46,7 +53,7 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.advanced)
         }
-        .frame(width: 450, height: 300)
+        .frame(width: 450, height: 320)
         .fixedSize()
     }
 
@@ -218,6 +225,110 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: - Subscription Tab
+
+    @ViewBuilder
+    private var subscriptionTab: some View {
+        Form {
+            if purchaseViewModel.isPro {
+                proStatusSection
+            } else {
+                freeStatusSection
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .task {
+            await purchaseViewModel.loadOfferings()
+        }
+    }
+
+    @ViewBuilder
+    private var proStatusSection: some View {
+        Section("Subscription Status") {
+            HStack {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+                    .font(.title2)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Happy Pro")
+                        .font(.headline)
+                    Text("All premium features unlocked")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+        }
+
+        Section {
+            if let subscriptions = purchaseViewModel.customerInfo?.activeSubscriptions,
+               !subscriptions.isEmpty {
+                ForEach(subscriptions, id: \.self) { subscription in
+                    LabeledContent("Product", value: subscription)
+                }
+            }
+
+            Button("Manage Subscription") {
+                // Open App Store subscription management
+                if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var freeStatusSection: some View {
+        Section("Subscription Status") {
+            HStack {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(.blue)
+                    .font(.title2)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Free Plan")
+                        .font(.headline)
+                    Text("Upgrade to unlock all features")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+        }
+
+        Section {
+            Button {
+                purchaseViewModel.showingPaywall = true
+            } label: {
+                Label("Upgrade to Pro", systemImage: "arrow.up.circle.fill")
+            }
+
+            Button {
+                Task {
+                    await purchaseViewModel.restore()
+                }
+            } label: {
+                if purchaseViewModel.isRestoring {
+                    HStack {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Restoring...")
+                    }
+                } else {
+                    Text("Restore Purchases")
+                }
+            }
+            .disabled(purchaseViewModel.isRestoring)
+        }
+        .sheet(isPresented: $purchaseViewModel.showingPaywall) {
+            PaywallView()
+        }
     }
 
     // MARK: - Helpers
