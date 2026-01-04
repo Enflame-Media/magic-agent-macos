@@ -6,6 +6,7 @@
 //  Copyright © 2024 Enflame Media. All rights reserved.
 //
 
+import AppKit
 import Foundation
 
 /// ViewModel for the settings/preferences view.
@@ -64,6 +65,34 @@ final class SettingsViewModel {
     var serverURL: String {
         get { UserDefaults.standard.string(forKey: "serverURL") ?? "https://api.happy.engineering" }
         set { UserDefaults.standard.set(newValue, forKey: "serverURL") }
+    }
+
+    // MARK: - Language Settings (HAP-724)
+
+    /// The localization manager for language operations.
+    private let localizationManager = LocalizationManager.shared
+
+    /// The current language code ("auto" for system, or specific code like "en", "es").
+    var selectedLanguage: String {
+        get {
+            UserDefaults.standard.string(forKey: "preferredLanguage") ?? "auto"
+        }
+        set {
+            localizationManager.currentLanguage = newValue
+            languageChangeRequiresRestart = true
+        }
+    }
+
+    /// Whether a language change requires restart.
+    var languageChangeRequiresRestart: Bool = false
+
+    /// List of supported language options (including auto).
+    var supportedLanguages: [(code: String, name: String)] {
+        var languages: [(code: String, name: String)] = [("auto", "settings.language.automatic".localized)]
+        for locale in LocalizationManager.supportedLocales {
+            languages.append((locale, localizationManager.displayName(for: locale)))
+        }
+        return languages
     }
 
     // MARK: - Privacy Settings (HAP-727)
@@ -125,6 +154,18 @@ final class SettingsViewModel {
         themePreference = .system
         serverURL = "https://api.happy.engineering"
         showOnlineStatus = true
+        selectedLanguage = "auto"
+        languageChangeRequiresRestart = false
+    }
+
+    /// Restart the application.
+    func restartApp() {
+        let task = Process()
+        task.launchPath = "/bin/sh"
+        task.arguments = ["-c", "sleep 0.5; open \"\(Bundle.main.bundlePath)\""]
+        task.launch()
+
+        NSApplication.shared.terminate(nil)
     }
 
     /// Load privacy settings from server.
@@ -236,6 +277,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case account = "Account"
     case subscription = "Subscription"
+    case language = "Language"
     case privacy = "Privacy"
     case notifications = "Notifications"
     case advanced = "Advanced"
@@ -247,6 +289,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .account: return "person.circle"
         case .subscription: return "creditcard"
+        case .language: return "globe"
         case .privacy: return "eye.slash"
         case .notifications: return "bell"
         case .advanced: return "wrench.and.screwdriver"

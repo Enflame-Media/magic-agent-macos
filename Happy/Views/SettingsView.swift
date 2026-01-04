@@ -35,6 +35,12 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.subscription)
 
+            languageTab
+                .tabItem {
+                    Label("Language", systemImage: "globe")
+                }
+                .tag(SettingsTab.language)
+
             privacyTab
                 .tabItem {
                     Label("Privacy", systemImage: "eye.slash")
@@ -53,7 +59,7 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.advanced)
         }
-        .frame(width: 450, height: 320)
+        .frame(width: 500, height: 360)
         .fixedSize()
     }
 
@@ -133,6 +139,66 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity)
             .padding()
         }
+    }
+
+    // MARK: - Language Tab (HAP-724)
+
+    @ViewBuilder
+    private var languageTab: some View {
+        Form {
+            Section {
+                Text("settings.language.description".localized)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("settings.language.current".localized) {
+                Picker("settings.language.title".localized, selection: $viewModel.selectedLanguage) {
+                    ForEach(viewModel.supportedLanguages, id: \.code) { language in
+                        HStack {
+                            Text(language.name)
+                            if language.code == "auto" {
+                                Text("settings.language.automaticDescription".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .tag(language.code)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+
+            if viewModel.languageChangeRequiresRestart {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("settings.language.restartRequired".localized, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+
+                        Text("settings.language.restartMessage".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            Spacer()
+
+                            Button("settings.language.restartLater".localized) {
+                                viewModel.languageChangeRequiresRestart = false
+                            }
+
+                            Button("settings.language.restartNow".localized) {
+                                viewModel.restartApp()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
     }
 
     // MARK: - Privacy Tab (HAP-727)
