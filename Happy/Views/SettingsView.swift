@@ -201,7 +201,7 @@ struct SettingsView: View {
         .padding()
     }
 
-    // MARK: - Privacy Tab (HAP-727)
+    // MARK: - Privacy Tab (HAP-727, HAP-768)
 
     @ViewBuilder
     private var privacyTab: some View {
@@ -219,8 +219,40 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
 
-                if viewModel.isSyncingPrivacy {
+            Section("Profile Visibility") {
+                Picker("Who can view your profile", selection: $viewModel.profileVisibility) {
+                    ForEach(ProfileVisibility.allCases) { option in
+                        Text(option.displayName).tag(option)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .disabled(viewModel.isSyncingPrivacy)
+
+                Text(viewModel.profileVisibility.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Friend Requests") {
+                Picker("Who can send you friend requests", selection: $viewModel.friendRequestPermission) {
+                    ForEach(FriendRequestPermission.allCases) { option in
+                        Text(option.displayName).tag(option)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .disabled(viewModel.isSyncingPrivacy)
+
+                Text(viewModel.friendRequestPermission.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if viewModel.isSyncingPrivacy {
+                Section {
                     HStack {
                         ProgressView()
                             .controlSize(.small)
@@ -229,18 +261,14 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+            }
 
-                if let error = viewModel.privacySyncError {
+            if let error = viewModel.privacySyncError {
+                Section {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
-            }
-
-            Section {
-                Text("When disabled, you'll appear offline to all friends, but you can still see when they're online.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

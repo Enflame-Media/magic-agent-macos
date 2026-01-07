@@ -95,7 +95,7 @@ final class SettingsViewModel {
         return languages
     }
 
-    // MARK: - Privacy Settings (HAP-727)
+    // MARK: - Privacy Settings (HAP-727, HAP-768)
 
     /// Whether to show online status to friends.
     /// When disabled, user appears offline to all friends.
@@ -110,6 +110,34 @@ final class SettingsViewModel {
         set {
             UserDefaults.standard.set(newValue, forKey: "showOnlineStatus")
             // Sync to server when authenticated
+            Task { await syncPrivacySettingsToServer() }
+        }
+    }
+
+    /// Profile visibility setting (HAP-768).
+    var profileVisibility: ProfileVisibility {
+        get {
+            guard let rawValue = UserDefaults.standard.string(forKey: "profileVisibility") else {
+                return .public
+            }
+            return ProfileVisibility(rawValue: rawValue) ?? .public
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "profileVisibility")
+            Task { await syncPrivacySettingsToServer() }
+        }
+    }
+
+    /// Friend request permission setting (HAP-768).
+    var friendRequestPermission: FriendRequestPermission {
+        get {
+            guard let rawValue = UserDefaults.standard.string(forKey: "friendRequestPermission") else {
+                return .anyone
+            }
+            return FriendRequestPermission(rawValue: rawValue) ?? .anyone
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "friendRequestPermission")
             Task { await syncPrivacySettingsToServer() }
         }
     }
@@ -154,6 +182,8 @@ final class SettingsViewModel {
         themePreference = .system
         serverURL = "https://api.happy.engineering"
         showOnlineStatus = true
+        profileVisibility = .public
+        friendRequestPermission = .anyone
         selectedLanguage = "auto"
         languageChangeRequiresRestart = false
     }
@@ -180,6 +210,8 @@ final class SettingsViewModel {
             await MainActor.run {
                 // Update local cache without triggering sync
                 UserDefaults.standard.set(settings.showOnlineStatus, forKey: "showOnlineStatus")
+                UserDefaults.standard.set(settings.profileVisibility.rawValue, forKey: "profileVisibility")
+                UserDefaults.standard.set(settings.friendRequestPermission.rawValue, forKey: "friendRequestPermission")
                 self.isSyncingPrivacy = false
             }
         } catch {
@@ -204,7 +236,11 @@ final class SettingsViewModel {
         await MainActor.run { isSyncingPrivacy = true }
 
         do {
-            let settings = PrivacySettings(showOnlineStatus: showOnlineStatus)
+            let settings = PrivacySettings(
+                showOnlineStatus: showOnlineStatus,
+                profileVisibility: profileVisibility,
+                friendRequestPermission: friendRequestPermission
+            )
             _ = try await updatePrivacySettings(settings)
             await MainActor.run {
                 self.privacySyncError = nil
@@ -263,11 +299,60 @@ final class SettingsViewModel {
     }
 }
 
-// MARK: - Privacy Settings (HAP-727)
+// MARK: - Privacy Settings (HAP-727, HAP-768)
+
+/// Profile visibility options.
+enum ProfileVisibility: String, Codable, CaseIterable, Identifiable {
+    case `public` = "public"
+    case friendsOnly = "friends-only"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .public: return "Public"
+        case .friendsOnly: return "Friends Only"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .public: return "Anyone can view your profile"
+        case .friendsOnly: return "Only friends can view your profile"
+        }
+    }
+}
+
+/// Friend request permission options.
+enum FriendRequestPermission: String, Codable, CaseIterable, Identifiable {
+    case anyone = "anyone"
+    case friendsOfFriends = "friends-of-friends"
+    case none = "none"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .anyone: return "Anyone"
+        case .friendsOfFriends: return "Friends of Friends"
+        case .none: return "No One"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .anyone: return "Anyone can send you friend requests"
+        case .friendsOfFriends: return "Only friends of your friends can send requests"
+        case .none: return "Nobody can send you friend requests"
+        }
+    }
+}
 
 /// Privacy settings structure for API communication.
 struct PrivacySettings: Codable {
     let showOnlineStatus: Bool
+    let profileVisibility: ProfileVisibility
+    let friendRequestPermission: FriendRequestPermission
 }
 
 // MARK: - Supporting Types

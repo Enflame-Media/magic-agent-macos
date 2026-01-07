@@ -3,7 +3,7 @@
 // Happy
 //
 // AUTO-GENERATED FILE - DO NOT EDIT
-// Generated: 2026-01-01T10:47:58.222Z
+// Generated: 2026-01-04T17:25:32.951Z
 // Source: @happy/protocol Zod schemas
 //
 // Regenerate with:
@@ -47,6 +47,18 @@ import Foundation
 //   let aPIEphemeralUpdate = try APIEphemeralUpdate(json)
 //   let aPIUpdateContainer = try APIUpdateContainer(json)
 //   let ephemeralPayload = try EphemeralPayload(json)
+//   let sessionSharePermission = try? JSONDecoder().decode(SessionSharePermission.self, from: jsonData)
+//   let sessionShareEntry = try SessionShareEntry(json)
+//   let sessionShareUrlConfig = try SessionShareUrlConfig(json)
+//   let invitationStatus = try? JSONDecoder().decode(InvitationStatus.self, from: jsonData)
+//   let sessionShareInvitation = try SessionShareInvitation(json)
+//   let sessionShareSettings = try SessionShareSettings(json)
+//   let addSessionShareRequest = try AddSessionShareRequest(json)
+//   let updateSessionShareRequest = try UpdateSessionShareRequest(json)
+//   let removeSessionShareRequest = try RemoveSessionShareRequest(json)
+//   let updateUrlSharingRequest = try UpdateUrlSharingRequest(json)
+//   let revokeInvitationRequest = try RevokeInvitationRequest(json)
+//   let resendInvitationRequest = try ResendInvitationRequest(json)
 
 //
 // Hashable or Equatable:
@@ -201,15 +213,18 @@ public extension ImageRef {
 public struct UserProfile: Codable, Hashable, Sendable {
     public let avatar: UserProfileAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: UserProfileAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: UserProfileAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -239,6 +254,7 @@ public extension UserProfile {
         avatar: UserProfileAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -248,6 +264,7 @@ public extension UserProfile {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -2164,15 +2181,18 @@ public enum Action: String, Codable, Hashable, Sendable {
 public struct APIRelationshipUpdatedFromUser: Codable, Hashable, Sendable {
     public let avatar: PurpleAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: PurpleAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: PurpleAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -2202,6 +2222,7 @@ public extension APIRelationshipUpdatedFromUser {
         avatar: PurpleAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -2211,6 +2232,7 @@ public extension APIRelationshipUpdatedFromUser {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -2307,15 +2329,18 @@ public enum APIRelationshipUpdatedT: String, Codable, Hashable, Sendable {
 public struct APIRelationshipUpdatedToUser: Codable, Hashable, Sendable {
     public let avatar: FluffyAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: FluffyAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: FluffyAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -2345,6 +2370,7 @@ public extension APIRelationshipUpdatedToUser {
         avatar: FluffyAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -2354,6 +2380,7 @@ public extension APIRelationshipUpdatedToUser {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -2704,7 +2731,8 @@ public struct APIUpdate: Codable, Hashable, Sendable {
     public let agentStateVersion, createdAt: Double?
     public let dataEncryptionKey: String?
     public let metadata: APIUpdateMetadata?
-    public let metadataVersion, seq, updatedAt: Double?
+    public let metadataVersion, seq, updatedAt, archivedAt: Double?
+    public let archiveReason: ArchiveReason?
     public let avatar: APIUpdateAvatar?
     public let firstName: String?
     public let github: APIUpdateGithub?
@@ -2731,7 +2759,7 @@ public struct APIUpdate: Codable, Hashable, Sendable {
     public let repeatKey: String?
     public let changes: [APIUpdateChange]?
 
-    public init(message: APIUpdateMessage?, sid: String?, t: APIUpdateT, active: Bool?, activeAt: Double?, agentState: APIUpdateAgentState?, agentStateVersion: Double?, createdAt: Double?, dataEncryptionKey: String?, metadata: APIUpdateMetadata?, metadataVersion: Double?, seq: Double?, updatedAt: Double?, avatar: APIUpdateAvatar?, firstName: String?, github: APIUpdateGithub?, id: String?, lastName: String?, settings: APIUpdateSettings?, daemonState: APIUpdateDaemonState?, machineId: String?, daemonStateVersion: Double?, artifactId: String?, body: APIUpdateBody?, bodyVersion: Double?, header: APIUpdateHeader?, headerVersion: Double?, action: Action?, fromUser: APIUpdateFromUser?, fromUserId: String?, status: RelationshipStatus?, timestamp: Double?, toUser: APIUpdateToUser?, toUserId: String?, counter: Double?, cursor: String?, repeatKey: String?, changes: [APIUpdateChange]?) {
+    public init(message: APIUpdateMessage?, sid: String?, t: APIUpdateT, active: Bool?, activeAt: Double?, agentState: APIUpdateAgentState?, agentStateVersion: Double?, createdAt: Double?, dataEncryptionKey: String?, metadata: APIUpdateMetadata?, metadataVersion: Double?, seq: Double?, updatedAt: Double?, archivedAt: Double?, archiveReason: ArchiveReason?, avatar: APIUpdateAvatar?, firstName: String?, github: APIUpdateGithub?, id: String?, lastName: String?, settings: APIUpdateSettings?, daemonState: APIUpdateDaemonState?, machineId: String?, daemonStateVersion: Double?, artifactId: String?, body: APIUpdateBody?, bodyVersion: Double?, header: APIUpdateHeader?, headerVersion: Double?, action: Action?, fromUser: APIUpdateFromUser?, fromUserId: String?, status: RelationshipStatus?, timestamp: Double?, toUser: APIUpdateToUser?, toUserId: String?, counter: Double?, cursor: String?, repeatKey: String?, changes: [APIUpdateChange]?) {
         self.message = message
         self.sid = sid
         self.t = t
@@ -2745,6 +2773,8 @@ public struct APIUpdate: Codable, Hashable, Sendable {
         self.metadataVersion = metadataVersion
         self.seq = seq
         self.updatedAt = updatedAt
+        self.archivedAt = archivedAt
+        self.archiveReason = archiveReason
         self.avatar = avatar
         self.firstName = firstName
         self.github = github
@@ -2805,6 +2835,8 @@ public extension APIUpdate {
         metadataVersion: Double?? = nil,
         seq: Double?? = nil,
         updatedAt: Double?? = nil,
+        archivedAt: Double?? = nil,
+        archiveReason: ArchiveReason?? = nil,
         avatar: APIUpdateAvatar?? = nil,
         firstName: String?? = nil,
         github: APIUpdateGithub?? = nil,
@@ -2845,6 +2877,8 @@ public extension APIUpdate {
             metadataVersion: metadataVersion ?? self.metadataVersion,
             seq: seq ?? self.seq,
             updatedAt: updatedAt ?? self.updatedAt,
+            archivedAt: archivedAt ?? self.archivedAt,
+            archiveReason: archiveReason ?? self.archiveReason,
             avatar: avatar ?? self.avatar,
             firstName: firstName ?? self.firstName,
             github: github ?? self.github,
@@ -2969,6 +3003,12 @@ public extension PurpleAgentState {
     func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
         return String(data: try self.jsonData(), encoding: encoding)
     }
+}
+
+public enum ArchiveReason: String, Codable, Hashable, Sendable {
+    case revivalFailed = "revival_failed"
+    case timeout = "timeout"
+    case userRequested = "user_requested"
 }
 
 //
@@ -3288,15 +3328,18 @@ public extension PurpleDaemonState {
 public struct APIUpdateFromUser: Codable, Hashable, Sendable {
     public let avatar: TentacledAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: TentacledAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: TentacledAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -3326,6 +3369,7 @@ public extension APIUpdateFromUser {
         avatar: TentacledAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -3335,6 +3379,7 @@ public extension APIUpdateFromUser {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -3838,6 +3883,7 @@ public extension APIUpdateSettings {
 }
 
 public enum APIUpdateT: String, Codable, Hashable, Sendable {
+    case archiveSession = "archive-session"
     case deleteArtifact = "delete-artifact"
     case deleteSession = "delete-session"
     case kvBatchUpdate = "kv-batch-update"
@@ -3863,15 +3909,18 @@ public enum APIUpdateT: String, Codable, Hashable, Sendable {
 public struct APIUpdateToUser: Codable, Hashable, Sendable {
     public let avatar: StickyAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: StickyAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: StickyAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -3901,6 +3950,7 @@ public extension APIUpdateToUser {
         avatar: StickyAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -3910,6 +3960,7 @@ public extension APIUpdateToUser {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -4286,9 +4337,11 @@ public struct APIEphemeralUpdate: Codable, Hashable, Sendable {
     public let timestamp: Double?
     public let tokens: [String: Double]?
     public let machineId: String?
-    public let online: Bool?
+    public let online, isOnline: Bool?
+    public let lastSeen: Date?
+    public let userId: String?
 
-    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?) {
+    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?, isOnline: Bool?, lastSeen: Date?, userId: String?) {
         self.active = active
         self.activeAt = activeAt
         self.sid = sid
@@ -4300,6 +4353,9 @@ public struct APIEphemeralUpdate: Codable, Hashable, Sendable {
         self.tokens = tokens
         self.machineId = machineId
         self.online = online
+        self.isOnline = isOnline
+        self.lastSeen = lastSeen
+        self.userId = userId
     }
 }
 
@@ -4332,7 +4388,10 @@ public extension APIEphemeralUpdate {
         timestamp: Double?? = nil,
         tokens: [String: Double]?? = nil,
         machineId: String?? = nil,
-        online: Bool?? = nil
+        online: Bool?? = nil,
+        isOnline: Bool?? = nil,
+        lastSeen: Date?? = nil,
+        userId: String?? = nil
     ) -> APIEphemeralUpdate {
         return APIEphemeralUpdate(
             active: active ?? self.active,
@@ -4345,7 +4404,10 @@ public extension APIEphemeralUpdate {
             timestamp: timestamp ?? self.timestamp,
             tokens: tokens ?? self.tokens,
             machineId: machineId ?? self.machineId,
-            online: online ?? self.online
+            online: online ?? self.online,
+            isOnline: isOnline ?? self.isOnline,
+            lastSeen: lastSeen ?? self.lastSeen,
+            userId: userId ?? self.userId
         )
     }
 
@@ -4360,6 +4422,7 @@ public extension APIEphemeralUpdate {
 
 public enum APIEphemeralUpdateType: String, Codable, Hashable, Sendable {
     case activity = "activity"
+    case friendStatus = "friend-status"
     case machineActivity = "machine-activity"
     case machineStatus = "machine-status"
     case usage = "usage"
@@ -4444,7 +4507,8 @@ public struct APIUpdateContainerBody: Codable, Hashable, Sendable {
     public let agentStateVersion, createdAt: Double?
     public let dataEncryptionKey: String?
     public let metadata: BodyMetadata?
-    public let metadataVersion, seq, updatedAt: Double?
+    public let metadataVersion, seq, updatedAt, archivedAt: Double?
+    public let archiveReason: ArchiveReason?
     public let avatar: BodyAvatar?
     public let firstName: String?
     public let github: BodyGithub?
@@ -4471,7 +4535,7 @@ public struct APIUpdateContainerBody: Codable, Hashable, Sendable {
     public let repeatKey: String?
     public let changes: [BodyChange]?
 
-    public init(message: BodyMessage?, sid: String?, t: APIUpdateT, active: Bool?, activeAt: Double?, agentState: BodyAgentState?, agentStateVersion: Double?, createdAt: Double?, dataEncryptionKey: String?, metadata: BodyMetadata?, metadataVersion: Double?, seq: Double?, updatedAt: Double?, avatar: BodyAvatar?, firstName: String?, github: BodyGithub?, id: String?, lastName: String?, settings: BodySettings?, daemonState: BodyDaemonState?, machineId: String?, daemonStateVersion: Double?, artifactId: String?, body: BodyBodyUnion?, bodyVersion: Double?, header: BodyHeader?, headerVersion: Double?, action: Action?, fromUser: BodyFromUser?, fromUserId: String?, status: RelationshipStatus?, timestamp: Double?, toUser: BodyToUser?, toUserId: String?, counter: Double?, cursor: String?, repeatKey: String?, changes: [BodyChange]?) {
+    public init(message: BodyMessage?, sid: String?, t: APIUpdateT, active: Bool?, activeAt: Double?, agentState: BodyAgentState?, agentStateVersion: Double?, createdAt: Double?, dataEncryptionKey: String?, metadata: BodyMetadata?, metadataVersion: Double?, seq: Double?, updatedAt: Double?, archivedAt: Double?, archiveReason: ArchiveReason?, avatar: BodyAvatar?, firstName: String?, github: BodyGithub?, id: String?, lastName: String?, settings: BodySettings?, daemonState: BodyDaemonState?, machineId: String?, daemonStateVersion: Double?, artifactId: String?, body: BodyBodyUnion?, bodyVersion: Double?, header: BodyHeader?, headerVersion: Double?, action: Action?, fromUser: BodyFromUser?, fromUserId: String?, status: RelationshipStatus?, timestamp: Double?, toUser: BodyToUser?, toUserId: String?, counter: Double?, cursor: String?, repeatKey: String?, changes: [BodyChange]?) {
         self.message = message
         self.sid = sid
         self.t = t
@@ -4485,6 +4549,8 @@ public struct APIUpdateContainerBody: Codable, Hashable, Sendable {
         self.metadataVersion = metadataVersion
         self.seq = seq
         self.updatedAt = updatedAt
+        self.archivedAt = archivedAt
+        self.archiveReason = archiveReason
         self.avatar = avatar
         self.firstName = firstName
         self.github = github
@@ -4545,6 +4611,8 @@ public extension APIUpdateContainerBody {
         metadataVersion: Double?? = nil,
         seq: Double?? = nil,
         updatedAt: Double?? = nil,
+        archivedAt: Double?? = nil,
+        archiveReason: ArchiveReason?? = nil,
         avatar: BodyAvatar?? = nil,
         firstName: String?? = nil,
         github: BodyGithub?? = nil,
@@ -4585,6 +4653,8 @@ public extension APIUpdateContainerBody {
             metadataVersion: metadataVersion ?? self.metadataVersion,
             seq: seq ?? self.seq,
             updatedAt: updatedAt ?? self.updatedAt,
+            archivedAt: archivedAt ?? self.archivedAt,
+            archiveReason: archiveReason ?? self.archiveReason,
             avatar: avatar ?? self.avatar,
             firstName: firstName ?? self.firstName,
             github: github ?? self.github,
@@ -5028,15 +5098,18 @@ public extension FluffyDaemonState {
 public struct BodyFromUser: Codable, Hashable, Sendable {
     public let avatar: IndigoAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: IndigoAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: IndigoAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -5066,6 +5139,7 @@ public extension BodyFromUser {
         avatar: IndigoAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -5075,6 +5149,7 @@ public extension BodyFromUser {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -5587,15 +5662,18 @@ public extension BodySettings {
 public struct BodyToUser: Codable, Hashable, Sendable {
     public let avatar: IndecentAvatar?
     public let bio: String?
-    public let firstName, id: String
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
     public let lastName: String?
     public let status: RelationshipStatus
     public let username: String
 
-    public init(avatar: IndecentAvatar?, bio: String?, firstName: String, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+    public init(avatar: IndecentAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
         self.avatar = avatar
         self.bio = bio
         self.firstName = firstName
+        self.friendshipDate = friendshipDate
         self.id = id
         self.lastName = lastName
         self.status = status
@@ -5625,6 +5703,7 @@ public extension BodyToUser {
         avatar: IndecentAvatar?? = nil,
         bio: String?? = nil,
         firstName: String? = nil,
+        friendshipDate: String?? = nil,
         id: String? = nil,
         lastName: String?? = nil,
         status: RelationshipStatus? = nil,
@@ -5634,6 +5713,7 @@ public extension BodyToUser {
             avatar: avatar ?? self.avatar,
             bio: bio ?? self.bio,
             firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
             id: id ?? self.id,
             lastName: lastName ?? self.lastName,
             status: status ?? self.status,
@@ -5734,9 +5814,11 @@ public struct EphemeralPayload: Codable, Hashable, Sendable {
     public let timestamp: Double?
     public let tokens: [String: Double]?
     public let machineId: String?
-    public let online: Bool?
+    public let online, isOnline: Bool?
+    public let lastSeen: Date?
+    public let userId: String?
 
-    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?) {
+    public init(active: Bool?, activeAt: Double?, sid: String?, thinking: Bool?, type: APIEphemeralUpdateType, cost: [String: Double]?, key: String?, timestamp: Double?, tokens: [String: Double]?, machineId: String?, online: Bool?, isOnline: Bool?, lastSeen: Date?, userId: String?) {
         self.active = active
         self.activeAt = activeAt
         self.sid = sid
@@ -5748,6 +5830,9 @@ public struct EphemeralPayload: Codable, Hashable, Sendable {
         self.tokens = tokens
         self.machineId = machineId
         self.online = online
+        self.isOnline = isOnline
+        self.lastSeen = lastSeen
+        self.userId = userId
     }
 }
 
@@ -5780,7 +5865,10 @@ public extension EphemeralPayload {
         timestamp: Double?? = nil,
         tokens: [String: Double]?? = nil,
         machineId: String?? = nil,
-        online: Bool?? = nil
+        online: Bool?? = nil,
+        isOnline: Bool?? = nil,
+        lastSeen: Date?? = nil,
+        userId: String?? = nil
     ) -> EphemeralPayload {
         return EphemeralPayload(
             active: active ?? self.active,
@@ -5793,7 +5881,1118 @@ public extension EphemeralPayload {
             timestamp: timestamp ?? self.timestamp,
             tokens: tokens ?? self.tokens,
             machineId: machineId ?? self.machineId,
-            online: online ?? self.online
+            online: online ?? self.online,
+            isOnline: isOnline ?? self.isOnline,
+            lastSeen: lastSeen ?? self.lastSeen,
+            userId: userId ?? self.userId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - SessionShareEntry
+public struct SessionShareEntry: Codable, Hashable, Sendable {
+    public let id: String
+    public let permission: SessionSharePermission
+    public let sharedAt: Date
+    public let sharedBy, userId: String
+    public let userProfile: SessionShareEntryUserProfile?
+
+    public init(id: String, permission: SessionSharePermission, sharedAt: Date, sharedBy: String, userId: String, userProfile: SessionShareEntryUserProfile?) {
+        self.id = id
+        self.permission = permission
+        self.sharedAt = sharedAt
+        self.sharedBy = sharedBy
+        self.userId = userId
+        self.userProfile = userProfile
+    }
+}
+
+// MARK: SessionShareEntry convenience initializers and mutators
+
+public extension SessionShareEntry {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(SessionShareEntry.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        id: String? = nil,
+        permission: SessionSharePermission? = nil,
+        sharedAt: Date? = nil,
+        sharedBy: String? = nil,
+        userId: String? = nil,
+        userProfile: SessionShareEntryUserProfile?? = nil
+    ) -> SessionShareEntry {
+        return SessionShareEntry(
+            id: id ?? self.id,
+            permission: permission ?? self.permission,
+            sharedAt: sharedAt ?? self.sharedAt,
+            sharedBy: sharedBy ?? self.sharedBy,
+            userId: userId ?? self.userId,
+            userProfile: userProfile ?? self.userProfile
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum SessionSharePermission: String, Codable, Hashable, Sendable {
+    case viewAndChat = "view_and_chat"
+    case viewOnly = "view_only"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - SessionShareEntryUserProfile
+public struct SessionShareEntryUserProfile: Codable, Hashable, Sendable {
+    public let avatar: HilariousAvatar?
+    public let bio: String?
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
+    public let lastName: String?
+    public let status: RelationshipStatus
+    public let username: String
+
+    public init(avatar: HilariousAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+        self.avatar = avatar
+        self.bio = bio
+        self.firstName = firstName
+        self.friendshipDate = friendshipDate
+        self.id = id
+        self.lastName = lastName
+        self.status = status
+        self.username = username
+    }
+}
+
+// MARK: SessionShareEntryUserProfile convenience initializers and mutators
+
+public extension SessionShareEntryUserProfile {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(SessionShareEntryUserProfile.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        avatar: HilariousAvatar?? = nil,
+        bio: String?? = nil,
+        firstName: String? = nil,
+        friendshipDate: String?? = nil,
+        id: String? = nil,
+        lastName: String?? = nil,
+        status: RelationshipStatus? = nil,
+        username: String? = nil
+    ) -> SessionShareEntryUserProfile {
+        return SessionShareEntryUserProfile(
+            avatar: avatar ?? self.avatar,
+            bio: bio ?? self.bio,
+            firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
+            id: id ?? self.id,
+            lastName: lastName ?? self.lastName,
+            status: status ?? self.status,
+            username: username ?? self.username
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - HilariousAvatar
+public struct HilariousAvatar: Codable, Hashable, Sendable {
+    public let height: Double?
+    public let path: String
+    public let thumbhash: String?
+    public let url: String
+    public let width: Double?
+
+    public init(height: Double?, path: String, thumbhash: String?, url: String, width: Double?) {
+        self.height = height
+        self.path = path
+        self.thumbhash = thumbhash
+        self.url = url
+        self.width = width
+    }
+}
+
+// MARK: HilariousAvatar convenience initializers and mutators
+
+public extension HilariousAvatar {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(HilariousAvatar.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        height: Double?? = nil,
+        path: String? = nil,
+        thumbhash: String?? = nil,
+        url: String? = nil,
+        width: Double?? = nil
+    ) -> HilariousAvatar {
+        return HilariousAvatar(
+            height: height ?? self.height,
+            path: path ?? self.path,
+            thumbhash: thumbhash ?? self.thumbhash,
+            url: url ?? self.url,
+            width: width ?? self.width
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - SessionShareUrlConfig
+public struct SessionShareUrlConfig: Codable, Hashable, Sendable {
+    public let enabled: Bool
+    public let expiresAt: Date?
+    public let password: String?
+    public let permission: SessionSharePermission
+    public let token: String?
+
+    public init(enabled: Bool, expiresAt: Date?, password: String?, permission: SessionSharePermission, token: String?) {
+        self.enabled = enabled
+        self.expiresAt = expiresAt
+        self.password = password
+        self.permission = permission
+        self.token = token
+    }
+}
+
+// MARK: SessionShareUrlConfig convenience initializers and mutators
+
+public extension SessionShareUrlConfig {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(SessionShareUrlConfig.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        enabled: Bool? = nil,
+        expiresAt: Date?? = nil,
+        password: String?? = nil,
+        permission: SessionSharePermission? = nil,
+        token: String?? = nil
+    ) -> SessionShareUrlConfig {
+        return SessionShareUrlConfig(
+            enabled: enabled ?? self.enabled,
+            expiresAt: expiresAt ?? self.expiresAt,
+            password: password ?? self.password,
+            permission: permission ?? self.permission,
+            token: token ?? self.token
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - SessionShareInvitation
+public struct SessionShareInvitation: Codable, Hashable, Sendable {
+    public let email: String
+    public let expiresAt: Date
+    public let id: String
+    public let invitedAt: Date
+    public let invitedBy: String
+    public let permission: SessionSharePermission
+    public let status: InvitationStatus
+
+    public init(email: String, expiresAt: Date, id: String, invitedAt: Date, invitedBy: String, permission: SessionSharePermission, status: InvitationStatus) {
+        self.email = email
+        self.expiresAt = expiresAt
+        self.id = id
+        self.invitedAt = invitedAt
+        self.invitedBy = invitedBy
+        self.permission = permission
+        self.status = status
+    }
+}
+
+// MARK: SessionShareInvitation convenience initializers and mutators
+
+public extension SessionShareInvitation {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(SessionShareInvitation.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        email: String? = nil,
+        expiresAt: Date? = nil,
+        id: String? = nil,
+        invitedAt: Date? = nil,
+        invitedBy: String? = nil,
+        permission: SessionSharePermission? = nil,
+        status: InvitationStatus? = nil
+    ) -> SessionShareInvitation {
+        return SessionShareInvitation(
+            email: email ?? self.email,
+            expiresAt: expiresAt ?? self.expiresAt,
+            id: id ?? self.id,
+            invitedAt: invitedAt ?? self.invitedAt,
+            invitedBy: invitedBy ?? self.invitedBy,
+            permission: permission ?? self.permission,
+            status: status ?? self.status
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+public enum InvitationStatus: String, Codable, Hashable, Sendable {
+    case accepted = "accepted"
+    case expired = "expired"
+    case pending = "pending"
+    case revoked = "revoked"
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - SessionShareSettings
+public struct SessionShareSettings: Codable, Hashable, Sendable {
+    public let invitations: [Invitation]
+    public let sessionId: String
+    public let shares: [Share]
+    public let urlSharing: URLSharing
+
+    public init(invitations: [Invitation], sessionId: String, shares: [Share], urlSharing: URLSharing) {
+        self.invitations = invitations
+        self.sessionId = sessionId
+        self.shares = shares
+        self.urlSharing = urlSharing
+    }
+}
+
+// MARK: SessionShareSettings convenience initializers and mutators
+
+public extension SessionShareSettings {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(SessionShareSettings.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        invitations: [Invitation]? = nil,
+        sessionId: String? = nil,
+        shares: [Share]? = nil,
+        urlSharing: URLSharing? = nil
+    ) -> SessionShareSettings {
+        return SessionShareSettings(
+            invitations: invitations ?? self.invitations,
+            sessionId: sessionId ?? self.sessionId,
+            shares: shares ?? self.shares,
+            urlSharing: urlSharing ?? self.urlSharing
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - Invitation
+public struct Invitation: Codable, Hashable, Sendable {
+    public let email: String
+    public let expiresAt: Date
+    public let id: String
+    public let invitedAt: Date
+    public let invitedBy: String
+    public let permission: SessionSharePermission
+    public let status: InvitationStatus
+
+    public init(email: String, expiresAt: Date, id: String, invitedAt: Date, invitedBy: String, permission: SessionSharePermission, status: InvitationStatus) {
+        self.email = email
+        self.expiresAt = expiresAt
+        self.id = id
+        self.invitedAt = invitedAt
+        self.invitedBy = invitedBy
+        self.permission = permission
+        self.status = status
+    }
+}
+
+// MARK: Invitation convenience initializers and mutators
+
+public extension Invitation {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(Invitation.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        email: String? = nil,
+        expiresAt: Date? = nil,
+        id: String? = nil,
+        invitedAt: Date? = nil,
+        invitedBy: String? = nil,
+        permission: SessionSharePermission? = nil,
+        status: InvitationStatus? = nil
+    ) -> Invitation {
+        return Invitation(
+            email: email ?? self.email,
+            expiresAt: expiresAt ?? self.expiresAt,
+            id: id ?? self.id,
+            invitedAt: invitedAt ?? self.invitedAt,
+            invitedBy: invitedBy ?? self.invitedBy,
+            permission: permission ?? self.permission,
+            status: status ?? self.status
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - Share
+public struct Share: Codable, Hashable, Sendable {
+    public let id: String
+    public let permission: SessionSharePermission
+    public let sharedAt: Date
+    public let sharedBy, userId: String
+    public let userProfile: ShareUserProfile?
+
+    public init(id: String, permission: SessionSharePermission, sharedAt: Date, sharedBy: String, userId: String, userProfile: ShareUserProfile?) {
+        self.id = id
+        self.permission = permission
+        self.sharedAt = sharedAt
+        self.sharedBy = sharedBy
+        self.userId = userId
+        self.userProfile = userProfile
+    }
+}
+
+// MARK: Share convenience initializers and mutators
+
+public extension Share {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(Share.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        id: String? = nil,
+        permission: SessionSharePermission? = nil,
+        sharedAt: Date? = nil,
+        sharedBy: String? = nil,
+        userId: String? = nil,
+        userProfile: ShareUserProfile?? = nil
+    ) -> Share {
+        return Share(
+            id: id ?? self.id,
+            permission: permission ?? self.permission,
+            sharedAt: sharedAt ?? self.sharedAt,
+            sharedBy: sharedBy ?? self.sharedBy,
+            userId: userId ?? self.userId,
+            userProfile: userProfile ?? self.userProfile
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - ShareUserProfile
+public struct ShareUserProfile: Codable, Hashable, Sendable {
+    public let avatar: AmbitiousAvatar?
+    public let bio: String?
+    public let firstName: String
+    public let friendshipDate: String?
+    public let id: String
+    public let lastName: String?
+    public let status: RelationshipStatus
+    public let username: String
+
+    public init(avatar: AmbitiousAvatar?, bio: String?, firstName: String, friendshipDate: String?, id: String, lastName: String?, status: RelationshipStatus, username: String) {
+        self.avatar = avatar
+        self.bio = bio
+        self.firstName = firstName
+        self.friendshipDate = friendshipDate
+        self.id = id
+        self.lastName = lastName
+        self.status = status
+        self.username = username
+    }
+}
+
+// MARK: ShareUserProfile convenience initializers and mutators
+
+public extension ShareUserProfile {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(ShareUserProfile.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        avatar: AmbitiousAvatar?? = nil,
+        bio: String?? = nil,
+        firstName: String? = nil,
+        friendshipDate: String?? = nil,
+        id: String? = nil,
+        lastName: String?? = nil,
+        status: RelationshipStatus? = nil,
+        username: String? = nil
+    ) -> ShareUserProfile {
+        return ShareUserProfile(
+            avatar: avatar ?? self.avatar,
+            bio: bio ?? self.bio,
+            firstName: firstName ?? self.firstName,
+            friendshipDate: friendshipDate ?? self.friendshipDate,
+            id: id ?? self.id,
+            lastName: lastName ?? self.lastName,
+            status: status ?? self.status,
+            username: username ?? self.username
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - AmbitiousAvatar
+public struct AmbitiousAvatar: Codable, Hashable, Sendable {
+    public let height: Double?
+    public let path: String
+    public let thumbhash: String?
+    public let url: String
+    public let width: Double?
+
+    public init(height: Double?, path: String, thumbhash: String?, url: String, width: Double?) {
+        self.height = height
+        self.path = path
+        self.thumbhash = thumbhash
+        self.url = url
+        self.width = width
+    }
+}
+
+// MARK: AmbitiousAvatar convenience initializers and mutators
+
+public extension AmbitiousAvatar {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(AmbitiousAvatar.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        height: Double?? = nil,
+        path: String? = nil,
+        thumbhash: String?? = nil,
+        url: String? = nil,
+        width: Double?? = nil
+    ) -> AmbitiousAvatar {
+        return AmbitiousAvatar(
+            height: height ?? self.height,
+            path: path ?? self.path,
+            thumbhash: thumbhash ?? self.thumbhash,
+            url: url ?? self.url,
+            width: width ?? self.width
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - URLSharing
+public struct URLSharing: Codable, Hashable, Sendable {
+    public let enabled: Bool
+    public let expiresAt: Date?
+    public let password: String?
+    public let permission: SessionSharePermission
+    public let token: String?
+
+    public init(enabled: Bool, expiresAt: Date?, password: String?, permission: SessionSharePermission, token: String?) {
+        self.enabled = enabled
+        self.expiresAt = expiresAt
+        self.password = password
+        self.permission = permission
+        self.token = token
+    }
+}
+
+// MARK: URLSharing convenience initializers and mutators
+
+public extension URLSharing {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(URLSharing.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        enabled: Bool? = nil,
+        expiresAt: Date?? = nil,
+        password: String?? = nil,
+        permission: SessionSharePermission? = nil,
+        token: String?? = nil
+    ) -> URLSharing {
+        return URLSharing(
+            enabled: enabled ?? self.enabled,
+            expiresAt: expiresAt ?? self.expiresAt,
+            password: password ?? self.password,
+            permission: permission ?? self.permission,
+            token: token ?? self.token
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - AddSessionShareRequest
+public struct AddSessionShareRequest: Codable, Hashable, Sendable {
+    public let email: String?
+    public let permission: SessionSharePermission
+    public let sessionId: String
+    public let userId: String?
+
+    public init(email: String?, permission: SessionSharePermission, sessionId: String, userId: String?) {
+        self.email = email
+        self.permission = permission
+        self.sessionId = sessionId
+        self.userId = userId
+    }
+}
+
+// MARK: AddSessionShareRequest convenience initializers and mutators
+
+public extension AddSessionShareRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(AddSessionShareRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        email: String?? = nil,
+        permission: SessionSharePermission? = nil,
+        sessionId: String? = nil,
+        userId: String?? = nil
+    ) -> AddSessionShareRequest {
+        return AddSessionShareRequest(
+            email: email ?? self.email,
+            permission: permission ?? self.permission,
+            sessionId: sessionId ?? self.sessionId,
+            userId: userId ?? self.userId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - UpdateSessionShareRequest
+public struct UpdateSessionShareRequest: Codable, Hashable, Sendable {
+    public let permission: SessionSharePermission
+    public let shareId: String
+
+    public init(permission: SessionSharePermission, shareId: String) {
+        self.permission = permission
+        self.shareId = shareId
+    }
+}
+
+// MARK: UpdateSessionShareRequest convenience initializers and mutators
+
+public extension UpdateSessionShareRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(UpdateSessionShareRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        permission: SessionSharePermission? = nil,
+        shareId: String? = nil
+    ) -> UpdateSessionShareRequest {
+        return UpdateSessionShareRequest(
+            permission: permission ?? self.permission,
+            shareId: shareId ?? self.shareId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - RemoveSessionShareRequest
+public struct RemoveSessionShareRequest: Codable, Hashable, Sendable {
+    public let shareId: String
+
+    public init(shareId: String) {
+        self.shareId = shareId
+    }
+}
+
+// MARK: RemoveSessionShareRequest convenience initializers and mutators
+
+public extension RemoveSessionShareRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(RemoveSessionShareRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        shareId: String? = nil
+    ) -> RemoveSessionShareRequest {
+        return RemoveSessionShareRequest(
+            shareId: shareId ?? self.shareId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - UpdateUrlSharingRequest
+public struct UpdateUrlSharingRequest: Codable, Hashable, Sendable {
+    public let enabled: Bool
+    public let password: String?
+    public let permission: SessionSharePermission?
+    public let sessionId: String
+
+    public init(enabled: Bool, password: String?, permission: SessionSharePermission?, sessionId: String) {
+        self.enabled = enabled
+        self.password = password
+        self.permission = permission
+        self.sessionId = sessionId
+    }
+}
+
+// MARK: UpdateUrlSharingRequest convenience initializers and mutators
+
+public extension UpdateUrlSharingRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(UpdateUrlSharingRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        enabled: Bool? = nil,
+        password: String?? = nil,
+        permission: SessionSharePermission?? = nil,
+        sessionId: String? = nil
+    ) -> UpdateUrlSharingRequest {
+        return UpdateUrlSharingRequest(
+            enabled: enabled ?? self.enabled,
+            password: password ?? self.password,
+            permission: permission ?? self.permission,
+            sessionId: sessionId ?? self.sessionId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - RevokeInvitationRequest
+public struct RevokeInvitationRequest: Codable, Hashable, Sendable {
+    public let invitationId: String
+
+    public init(invitationId: String) {
+        self.invitationId = invitationId
+    }
+}
+
+// MARK: RevokeInvitationRequest convenience initializers and mutators
+
+public extension RevokeInvitationRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(RevokeInvitationRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        invitationId: String? = nil
+    ) -> RevokeInvitationRequest {
+        return RevokeInvitationRequest(
+            invitationId: invitationId ?? self.invitationId
+        )
+    }
+
+    func jsonData() throws -> Data {
+        return try newJSONEncoder().encode(self)
+    }
+
+    func jsonString(encoding: String.Encoding = .utf8) throws -> String? {
+        return String(data: try self.jsonData(), encoding: encoding)
+    }
+}
+
+//
+// Hashable or Equatable:
+// The compiler will not be able to synthesize the implementation of Hashable or Equatable
+// for types that require the use of JSONAny, nor will the implementation of Hashable be
+// synthesized for types that have collections (such as arrays or dictionaries).
+
+// MARK: - ResendInvitationRequest
+public struct ResendInvitationRequest: Codable, Hashable, Sendable {
+    public let invitationId: String
+
+    public init(invitationId: String) {
+        self.invitationId = invitationId
+    }
+}
+
+// MARK: ResendInvitationRequest convenience initializers and mutators
+
+public extension ResendInvitationRequest {
+    init(data: Data) throws {
+        self = try newJSONDecoder().decode(ResendInvitationRequest.self, from: data)
+    }
+
+    init(_ json: String, using encoding: String.Encoding = .utf8) throws {
+        guard let data = json.data(using: encoding) else {
+            throw NSError(domain: "JSONDecoding", code: 0, userInfo: nil)
+        }
+        try self.init(data: data)
+    }
+
+    init(fromURL url: URL) throws {
+        try self.init(data: try Data(contentsOf: url))
+    }
+
+    func with(
+        invitationId: String? = nil
+    ) -> ResendInvitationRequest {
+        return ResendInvitationRequest(
+            invitationId: invitationId ?? self.invitationId
         )
     }
 
