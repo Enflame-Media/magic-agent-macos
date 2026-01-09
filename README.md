@@ -66,7 +66,7 @@ xcodebuild build -scheme Happy -configuration Debug && \
 ## Project Structure
 
 ```
-happy-macos/
+apps/macos/
 ├── .github/
 │   └── workflows/           # CI/CD pipelines
 ├── Happy/

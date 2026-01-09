@@ -1,4 +1,8 @@
-# CLAUDE.md - happy-macos
+# Happy macOS - Development Guidelines
+
+> **📍 Part of the Happy monorepo** — See root [`CLAUDE.md`](../../CLAUDE.md) for overall architecture and cross-project guidelines.
+
+---
 
 This file provides guidance to Claude Code when working with the Happy macOS native application.
 
