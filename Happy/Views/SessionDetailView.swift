@@ -7,12 +7,14 @@
 //
 
 import SwiftUI
+import Combine
 
 /// Detailed view of a session showing messages and tools.
 struct SessionDetailView: View {
     let session: Session
 
     @State private var viewModel: SessionDetailViewModel
+    @State private var showingShareSheet = false
 
     init(session: Session) {
         self.session = session
@@ -43,6 +45,7 @@ struct SessionDetailView: View {
         .navigationTitle(session.title.isEmpty ? "Session" : session.title)
         .toolbar {
             ToolbarItemGroup {
+                shareButton
                 autoScrollToggle
                 copyButton
             }
@@ -54,6 +57,12 @@ struct SessionDetailView: View {
             Task {
                 await viewModel.unsubscribe()
             }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSessionSheet(sessionId: session.id)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shareSession)) { _ in
+            showingShareSheet = true
         }
     }
 
@@ -173,6 +182,17 @@ struct SessionDetailView: View {
     }
 
     // MARK: - Toolbar
+
+    @ViewBuilder
+    private var shareButton: some View {
+        Button {
+            showingShareSheet = true
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+        }
+        .help("Share Session")
+        .keyboardShortcut("s", modifiers: [.command, .shift])
+    }
 
     @ViewBuilder
     private var autoScrollToggle: some View {

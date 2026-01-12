@@ -18,6 +18,8 @@ struct FriendsView: View {
     @State private var showingAddFriend = false
     @State private var searchQuery = ""
     @State private var selectedFriendForProfile: UserProfile?
+    @State private var showingShareSheet = false
+    @State private var friendToShareWith: UserProfile?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,6 +52,11 @@ struct FriendsView: View {
         }
         .sheet(item: $selectedFriendForProfile) { friend in
             FriendProfileView(friend: friend)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let sessionId = sessionsViewModel.selectedSessionId {
+                ShareSessionSheet(sessionId: sessionId)
+            }
         }
     }
 
@@ -225,15 +232,9 @@ struct FriendsView: View {
     private var sessionsViewModel: SessionsViewModel { SessionsViewModel.shared }
 
     private func shareSessionWithFriend(_ friend: UserProfile) {
-        guard let sessionId = sessionsViewModel.selectedSessionId else { return }
-
-        let shareURL = URL(string: "happy://session/\(sessionId)?share=\(friend.id)")!
-
-        if let window = NSApp.keyWindow,
-           let contentView = window.contentView {
-            let picker = NSSharingServicePicker(items: [shareURL])
-            picker.show(relativeTo: .zero, of: contentView, preferredEdge: .minY)
-        }
+        guard sessionsViewModel.selectedSessionId != nil else { return }
+        friendToShareWith = friend
+        showingShareSheet = true
     }
 
     // MARK: - Filtered Friends

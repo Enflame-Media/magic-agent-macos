@@ -71,6 +71,11 @@ struct HappyApp: App {
 
                 Divider()
 
+                Button("Share Session...") {
+                    NotificationCenter.default.post(name: .shareSession, object: nil)
+                }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+
                 Button("Copy Session") {
                     NotificationCenter.default.post(name: .copySession, object: nil)
                 }
@@ -235,6 +240,7 @@ struct CLIPairingInfo: Codable {
 extension Notification.Name {
     // Session notifications
     static let refreshSessions = Notification.Name("refreshSessions")
+    static let shareSession = Notification.Name("shareSession")
     static let copySession = Notification.Name("copySession")
     static let exportSession = Notification.Name("exportSession")
 
