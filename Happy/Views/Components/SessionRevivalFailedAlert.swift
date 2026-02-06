@@ -215,20 +215,162 @@ struct SessionRevivalProgressOverlay: View {
     }
 }
 
+// MARK: - Revival Cooldown Banner (HAP-868)
+
+/// A banner view that displays when session revival is temporarily paused
+/// due to the circuit breaker cooldown.
+///
+/// Shows a countdown timer and provides visual feedback that revival
+/// attempts are being delayed.
+///
+/// Usage:
+/// ```swift
+/// SessionRevivalCooldownBanner()
+///     .environmentObject(SessionRevivalManager.shared)
+/// ```
+///
+/// @see HAP-868 - Handle session-revival-paused WebSocket event
+struct SessionRevivalCooldownBanner: View {
+    @Environment(SessionRevivalManager.self) private var revivalManager
+
+    var body: some View {
+        if revivalManager.showingCooldownBanner {
+            bannerContent
+        }
+    }
+
+    // MARK: - Banner Content
+
+    @ViewBuilder
+    private var bannerContent: some View {
+        HStack(spacing: 12) {
+            // Warning icon with animation
+            Image(systemName: "clock.badge.exclamationmark")
+                .font(.system(size: 20))
+                .foregroundStyle(.orange)
+                .symbolRenderingMode(.hierarchical)
+                .accessibilityHidden(true)
+
+            // Message and countdown
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Revival Paused")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Text(countdownText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.numericText())
+            }
+
+            Spacer()
+
+            // Countdown timer badge
+            countdownBadge
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(bannerBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .transition(.asymmetric(
+            insertion: .move(edge: .top).combined(with: .opacity),
+            removal: .move(edge: .top).combined(with: .opacity)
+        ))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Session revival paused. \(countdownText)")
+    }
+
+    // MARK: - Countdown Badge
+
+    @ViewBuilder
+    private var countdownBadge: some View {
+        let seconds = revivalManager.remainingCooldownSeconds
+
+        HStack(spacing: 4) {
+            Image(systemName: "timer")
+                .font(.caption)
+
+            Text(formatCountdown(seconds))
+                .font(.system(.caption, design: .monospaced))
+                .fontWeight(.medium)
+                .contentTransition(.numericText())
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(.orange.gradient)
+        )
+        .accessibilityLabel("Resuming in \(seconds) seconds")
+    }
+
+    // MARK: - Background
+
+    @ViewBuilder
+    private var bannerBackground: some View {
+        ZStack {
+            Color(nsColor: .windowBackgroundColor)
+
+            // Subtle warning gradient
+            LinearGradient(
+                colors: [.orange.opacity(0.1), .clear],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var countdownText: String {
+        let seconds = revivalManager.remainingCooldownSeconds
+        if seconds <= 0 {
+            return "Resuming soon..."
+        } else if seconds == 1 {
+            return "Resuming in 1 second..."
+        } else {
+            return "Resuming in \(seconds) seconds..."
+        }
+    }
+
+    /// Format the countdown for the badge display.
+    private func formatCountdown(_ seconds: Int) -> String {
+        let minutes = seconds / 60
+        let remainingSeconds = seconds % 60
+
+        if minutes > 0 {
+            return String(format: "%d:%02d", minutes, remainingSeconds)
+        } else {
+            return String(format: "0:%02d", seconds)
+        }
+    }
+}
+
 // MARK: - View Modifier
 
-/// A view modifier that adds session revival alert handling.
+/// A view modifier that adds session revival alert and cooldown handling.
 ///
 /// Usage:
 /// ```swift
 /// ContentView()
 ///     .sessionRevivalAlert()
 /// ```
+///
+/// @see HAP-737 - Session revival error handling
+/// @see HAP-868 - Circuit breaker cooldown UI
 struct SessionRevivalAlertModifier: ViewModifier {
     @Environment(SessionRevivalManager.self) private var revivalManager
 
     func body(content: Content) -> some View {
         content
+            .overlay(alignment: .top) {
+                // Cooldown banner (HAP-868)
+                SessionRevivalCooldownBanner()
+            }
             .overlay {
                 // Progress overlay
                 SessionRevivalProgressOverlay()
@@ -249,16 +391,20 @@ struct SessionRevivalAlertModifier: ViewModifier {
             }
             .animation(.easeInOut(duration: 0.2), value: revivalManager.showingRevivalAlert)
             .animation(.easeInOut(duration: 0.2), value: revivalManager.isReviving)
+            .animation(.spring(duration: 0.3), value: revivalManager.showingCooldownBanner)
     }
 }
 
 extension View {
-    /// Adds session revival alert handling to this view.
+    /// Adds session revival alert and cooldown handling to this view.
     ///
     /// When a session revival fails, an alert will be shown with options
     /// to copy the session ID, archive the session, or dismiss.
     ///
-    /// - Returns: A view with session revival alert handling.
+    /// When the circuit breaker cooldown is active, a banner will be shown
+    /// with a countdown timer (HAP-868).
+    ///
+    /// - Returns: A view with session revival alert and cooldown handling.
     func sessionRevivalAlert() -> some View {
         modifier(SessionRevivalAlertModifier())
     }
@@ -282,4 +428,17 @@ extension View {
             SessionRevivalProgressOverlay()
         }
         .environment(SessionRevivalManager.shared)
+}
+
+#Preview("Cooldown Banner") {
+    VStack {
+        SessionRevivalCooldownBanner()
+
+        Spacer()
+
+        Text("Content below banner")
+            .padding()
+    }
+    .frame(width: 500, height: 300)
+    .environment(SessionRevivalManager.shared)
 }

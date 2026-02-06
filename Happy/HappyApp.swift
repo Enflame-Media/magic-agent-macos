@@ -139,6 +139,25 @@ struct HappyApp: App {
                 }
             }
 
+            // Voice menu (HAP-901)
+            CommandMenu("Voice") {
+                Button("Toggle Voice") {
+                    NotificationCenter.default.post(name: .toggleVoice, object: nil)
+                }
+                .keyboardShortcut("v", modifiers: [.command, .shift])
+
+                Button("Mute/Unmute") {
+                    NotificationCenter.default.post(name: .toggleVoiceMute, object: nil)
+                }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("End Voice Session") {
+                    NotificationCenter.default.post(name: .endVoiceSession, object: nil)
+                }
+            }
+
             // Subscription menu
             CommandMenu("Subscription") {
                 Button("Upgrade to Pro...") {
@@ -271,6 +290,11 @@ extension Notification.Name {
     // Artifacts notifications
     static let showArtifacts = Notification.Name("showArtifacts")
     static let refreshArtifacts = Notification.Name("refreshArtifacts")
+
+    // Voice notifications (HAP-901)
+    static let toggleVoice = Notification.Name("toggleVoice")
+    static let toggleVoiceMute = Notification.Name("toggleVoiceMute")
+    static let endVoiceSession = Notification.Name("endVoiceSession")
 
     // Subscription notifications
     static let showPaywall = Notification.Name("showPaywall")

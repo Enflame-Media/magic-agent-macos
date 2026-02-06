@@ -9,14 +9,25 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Threshold for switching to optimized flat list rendering.
+/// Below this count, use OutlineGroup (better UX).
+/// Above this count, use LazyVStack (better performance).
+private let largeTreeThreshold = 100
+
 /// A native macOS artifact browser with file tree navigation.
 ///
 /// Features:
-/// - OutlineGroup-based file tree
+/// - OutlineGroup-based file tree for small collections
+/// - LazyVStack-based flat tree for large collections (HAP-873)
 /// - QuickLook integration
 /// - Drag and drop to Finder
 /// - Syntax-highlighted code viewing
 /// - Image preview with native controls
+///
+/// Performance Optimizations (HAP-873):
+/// - Lazy loading of tree nodes for 1000+ artifacts
+/// - Efficient expansion state management
+/// - Minimal view invalidation with @State isolation
 struct ArtifactBrowser: View {
     /// The session ID to show artifacts for (optional, shows all if nil).
     let sessionId: String?
@@ -24,6 +35,8 @@ struct ArtifactBrowser: View {
     @State private var viewModel = ArtifactViewModel()
     @State private var selectedNode: FileTreeNode?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    /// Expanded directory paths for the flat tree view.
+    @State private var expandedPaths: Set<String> = []
 
     init(sessionId: String? = nil) {
         self.sessionId = sessionId
@@ -54,7 +67,11 @@ struct ArtifactBrowser: View {
                 loadingView
             } else if viewModel.count == 0 {
                 emptyView
+            } else if viewModel.count > largeTreeThreshold {
+                // Use optimized flat list for large collections (HAP-873)
+                optimizedFileTreeView
             } else {
+                // Use OutlineGroup for smaller collections
                 fileTreeView
             }
         }
@@ -85,6 +102,76 @@ struct ArtifactBrowser: View {
             }
         }
         .listStyle(.sidebar)
+    }
+
+    /// Optimized file tree for large artifact collections.
+    ///
+    /// Uses LazyVStack with manual expansion state for better performance
+    /// when rendering 1000+ artifacts.
+    @ViewBuilder
+    private var optimizedFileTreeView: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(flattenedNodes, id: \.node.id) { item in
+                    OptimizedFileTreeRow(
+                        node: item.node,
+                        depth: item.depth,
+                        isExpanded: item.node.isDirectory && expandedPaths.contains(item.node.path),
+                        isSelected: viewModel.selectedArtifactId == item.node.artifactId
+                    )
+                    .onTapGesture {
+                        handleNodeTap(item.node)
+                    }
+                    .draggable(item.node) {
+                        FileTreeRow(node: item.node, isSelected: false)
+                            .padding(4)
+                            .background(.regularMaterial)
+                            .cornerRadius(4)
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .listStyle(.sidebar)
+    }
+
+    /// Flattened nodes for the optimized view.
+    private var flattenedNodes: [(node: FileTreeNode, depth: Int)] {
+        flattenTree(viewModel.fileTree, expanded: expandedPaths, depth: 0)
+    }
+
+    /// Flatten tree nodes, respecting expansion state.
+    private func flattenTree(
+        _ nodes: [FileTreeNode],
+        expanded: Set<String>,
+        depth: Int
+    ) -> [(node: FileTreeNode, depth: Int)] {
+        var result: [(node: FileTreeNode, depth: Int)] = []
+
+        for node in nodes {
+            result.append((node: node, depth: depth))
+
+            if node.isDirectory, let children = node.children, expanded.contains(node.path) {
+                result.append(contentsOf: flattenTree(children, expanded: expanded, depth: depth + 1))
+            }
+        }
+
+        return result
+    }
+
+    /// Handle tap on a file tree node.
+    private func handleNodeTap(_ node: FileTreeNode) {
+        if node.isDirectory {
+            // Toggle expansion
+            if expandedPaths.contains(node.path) {
+                expandedPaths.remove(node.path)
+            } else {
+                expandedPaths.insert(node.path)
+            }
+        } else {
+            // Select artifact
+            viewModel.selectFromNode(node)
+        }
     }
 
     @ViewBuilder
@@ -222,6 +309,91 @@ struct FileTreeRow: View {
     private var iconColor: Color {
         if node.isDirectory {
             return .accentColor
+        }
+
+        switch node.fileType {
+        case .code:
+            return .blue
+        case .image:
+            return .green
+        case .document:
+            return .orange
+        case .data:
+            return .purple
+        case .unknown, .none:
+            return .gray
+        }
+    }
+}
+
+// MARK: - Optimized File Tree Row (HAP-873)
+
+/// An optimized row for the flat tree view with depth-based indentation.
+///
+/// Used in the LazyVStack-based tree view for large artifact collections.
+/// Includes expansion indicator for directories.
+struct OptimizedFileTreeRow: View {
+    let node: FileTreeNode
+    let depth: Int
+    let isExpanded: Bool
+    let isSelected: Bool
+
+    /// Row height for consistent layout.
+    private let rowHeight: CGFloat = 24
+    /// Indentation per depth level.
+    private let indentPerLevel: CGFloat = 16
+
+    var body: some View {
+        HStack(spacing: 4) {
+            // Indentation spacer
+            Spacer()
+                .frame(width: CGFloat(depth) * indentPerLevel)
+
+            // Expansion indicator for directories
+            if node.isDirectory {
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 12)
+            } else {
+                Spacer()
+                    .frame(width: 12)
+            }
+
+            // Icon
+            Image(systemName: node.systemImage)
+                .foregroundStyle(iconColor)
+                .frame(width: 16)
+
+            // Name
+            Text(node.name)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer()
+
+            // File extension badge
+            if !node.isDirectory, let ext = node.fileExtension {
+                Text(ext.uppercased())
+                    .font(.caption2)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(.quaternary)
+                    .foregroundStyle(.secondary)
+                    .cornerRadius(2)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(height: rowHeight)
+        .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+        .cornerRadius(4)
+        .contentShape(Rectangle())
+    }
+
+    private var iconColor: Color {
+        if node.isDirectory {
+            return isExpanded ? .accentColor : .accentColor.opacity(0.8)
         }
 
         switch node.fileType {

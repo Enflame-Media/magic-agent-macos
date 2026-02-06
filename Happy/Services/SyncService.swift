@@ -34,6 +34,14 @@ actor SyncService {
     /// Publisher for sync errors.
     nonisolated let syncErrors = PassthroughSubject<SyncError, Never>()
 
+    /// Publisher for session revival paused events (HAP-868).
+    /// Emitted when the CLI's circuit breaker cooldown is active.
+    nonisolated let sessionRevivalPaused = PassthroughSubject<SessionRevivalPausedEvent, Never>()
+
+    /// Publisher for session revived events (HAP-733).
+    /// Emitted when a session has been successfully revived.
+    nonisolated let sessionRevived = PassthroughSubject<SessionRevivedEvent, Never>()
+
     // MARK: - Private Properties
 
     private var webSocketTask: URLSessionWebSocketTask?
@@ -180,6 +188,35 @@ actor SyncService {
         case .pong:
             // Server acknowledged our ping
             break
+        case .sessionRevivalPaused:
+            // HAP-868: Handle circuit breaker cooldown event
+            if let reason = update.reason,
+               let remainingMs = update.remainingMs,
+               let resumesAt = update.resumesAt,
+               let machineId = update.machineId {
+                let event = SessionRevivalPausedEvent(
+                    reason: reason,
+                    remainingMs: remainingMs,
+                    resumesAt: resumesAt,
+                    machineId: machineId
+                )
+                sessionRevivalPaused.send(event)
+            }
+        case .sessionRevived:
+            // HAP-733: Handle session revived event (clears cooldown)
+            if let originalSessionId = update.originalSessionId,
+               let newSessionId = update.newSessionId,
+               let machineId = update.machineId {
+                let event = SessionRevivedEvent(
+                    originalSessionId: originalSessionId,
+                    newSessionId: newSessionId,
+                    machineId: machineId
+                )
+                sessionRevived.send(event)
+            }
+        case .subscribe, .unsubscribe, .update:
+            // These are client-to-server messages, ignore if received
+            break
         }
     }
 
@@ -220,6 +257,10 @@ enum SyncMessageType: String, Codable {
     case pong
     case session
     case message
+    /// Session revival paused due to circuit breaker cooldown (HAP-868)
+    case sessionRevivalPaused = "session-revival-paused"
+    /// Session was successfully revived (HAP-733)
+    case sessionRevived = "session-revived"
 }
 
 /// Envelope for typed sync updates from the server.
@@ -229,9 +270,38 @@ struct SyncUpdateEnvelope: Codable {
     let message: Message?
     let sessionId: String?
 
+    // Session revival paused event fields (HAP-868)
+    let reason: String?
+    let remainingMs: Int?
+    let resumesAt: Int64?
+    let machineId: String?
+
+    // Session revived event fields (HAP-733)
+    let originalSessionId: String?
+    let newSessionId: String?
+
     enum CodingKeys: String, CodingKey {
         case type, session, message, sessionId
+        case reason, remainingMs, resumesAt, machineId
+        case originalSessionId, newSessionId
     }
+}
+
+// MARK: - Session Revived Event (HAP-733)
+
+/// Event payload for session-revived WebSocket event.
+///
+/// Sent by the CLI when a stopped session has been successfully revived.
+/// The app should clear any cooldown UI and update session references.
+struct SessionRevivedEvent {
+    /// The original session ID that was stopped.
+    let originalSessionId: String
+
+    /// The new session ID after revival.
+    let newSessionId: String
+
+    /// Machine ID this event originated from.
+    let machineId: String
 }
 
 // MARK: - Errors

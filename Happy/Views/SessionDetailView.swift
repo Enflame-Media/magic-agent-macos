@@ -14,7 +14,9 @@ struct SessionDetailView: View {
     let session: Session
 
     @State private var viewModel: SessionDetailViewModel
+    @State private var voiceViewModel = VoiceViewModel()
     @State private var showingShareSheet = false
+    @State private var showingVoiceControl = false
 
     init(session: Session) {
         self.session = session
@@ -45,6 +47,7 @@ struct SessionDetailView: View {
         .navigationTitle(session.title.isEmpty ? "Session" : session.title)
         .toolbar {
             ToolbarItemGroup {
+                voiceButton
                 shareButton
                 autoScrollToggle
                 copyButton
@@ -63,6 +66,15 @@ struct SessionDetailView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .shareSession)) { _ in
             showingShareSheet = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleVoice)) { _ in
+            voiceViewModel.toggleSession(sessionId: session.id)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleVoiceMute)) { _ in
+            voiceViewModel.toggleMute()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .endVoiceSession)) { _ in
+            voiceViewModel.endSession()
         }
     }
 
@@ -182,6 +194,48 @@ struct SessionDetailView: View {
     }
 
     // MARK: - Toolbar
+
+    @ViewBuilder
+    private var voiceButton: some View {
+        Button {
+            voiceViewModel.toggleSession(sessionId: session.id)
+        } label: {
+            Image(systemName: voiceViewModel.iconName)
+                .foregroundStyle(voiceViewModel.indicatorColor)
+                .symbolEffect(.pulse, isActive: voiceViewModel.isConnecting)
+        }
+        .help(voiceViewModel.statusMessage)
+        .disabled(!voiceViewModel.isEnabled)
+        .keyboardShortcut("v", modifiers: [.command, .shift])
+        .popover(isPresented: $showingVoiceControl) {
+            VoiceControlView(sessionId: session.id, isCompact: false)
+                .frame(width: 280)
+        }
+        .contextMenu {
+            if voiceViewModel.isActive {
+                Button {
+                    voiceViewModel.toggleMute()
+                } label: {
+                    Label(voiceViewModel.isMuted ? "Unmute" : "Mute", systemImage: voiceViewModel.isMuted ? "mic.fill" : "mic.slash.fill")
+                }
+
+                Divider()
+
+                Button(role: .destructive) {
+                    voiceViewModel.endSession()
+                } label: {
+                    Label("End Voice Session", systemImage: "xmark.circle")
+                }
+            } else {
+                Button {
+                    voiceViewModel.toggleSession(sessionId: session.id)
+                } label: {
+                    Label("Start Voice Session", systemImage: "mic")
+                }
+                .disabled(!voiceViewModel.isEnabled)
+            }
+        }
+    }
 
     @ViewBuilder
     private var shareButton: some View {

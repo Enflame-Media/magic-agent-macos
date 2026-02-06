@@ -95,6 +95,23 @@ final class SettingsViewModel {
         return languages
     }
 
+    // MARK: - Voice Settings (HAP-903)
+
+    /// Whether to enable voice assistant features.
+    /// When disabled, VoiceService will not start sessions.
+    var voiceAssistantEnabled: Bool {
+        get {
+            // Default to true if not set (matches React Native implementation)
+            if UserDefaults.standard.object(forKey: "voiceAssistantEnabled") == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: "voiceAssistantEnabled")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "voiceAssistantEnabled")
+        }
+    }
+
     // MARK: - Privacy Settings (HAP-727, HAP-768)
 
     /// Whether to show online status to friends.
@@ -181,6 +198,7 @@ final class SettingsViewModel {
         launchAtLogin = false
         themePreference = .system
         serverURL = "https://api.happy.engineering"
+        voiceAssistantEnabled = true
         showOnlineStatus = true
         profileVisibility = .public
         friendRequestPermission = .anyone
@@ -362,6 +380,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case account = "Account"
     case subscription = "Subscription"
+    case voice = "Voice"
     case language = "Language"
     case privacy = "Privacy"
     case notifications = "Notifications"
@@ -374,6 +393,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .account: return "person.circle"
         case .subscription: return "creditcard"
+        case .voice: return "waveform"
         case .language: return "globe"
         case .privacy: return "eye.slash"
         case .notifications: return "bell"

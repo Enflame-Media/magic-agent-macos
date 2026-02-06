@@ -35,6 +35,12 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.subscription)
 
+            voiceTab
+                .tabItem {
+                    Label("Voice", systemImage: "waveform")
+                }
+                .tag(SettingsTab.voice)
+
             languageTab
                 .tabItem {
                     Label("Language", systemImage: "globe")
@@ -139,6 +145,62 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity)
             .padding()
         }
+    }
+
+    // MARK: - Voice Tab (HAP-901)
+
+    @State private var voiceViewModel = VoiceViewModel()
+
+    @ViewBuilder
+    private var voiceTab: some View {
+        Form {
+            Section("Voice Assistant") {
+                Toggle("Enable Voice Assistant", isOn: $viewModel.voiceAssistantEnabled)
+
+                if viewModel.voiceAssistantEnabled {
+                    Text("Voice features are active. Use Cmd+Shift+V in a session to start voice.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Voice features are turned off. Enable to use voice interactions.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if viewModel.voiceAssistantEnabled {
+                Section("Voice Language") {
+                    Picker("Language", selection: $voiceViewModel.voiceLanguage) {
+                        ForEach(VoiceViewModel.supportedLanguages, id: \.code) { language in
+                            Text(language.name).tag(language.code)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+
+                    Text("The language used for voice conversations with the assistant.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Keyboard Shortcuts") {
+                    LabeledContent("Toggle Voice", value: "Cmd+Shift+V")
+                        .foregroundStyle(.secondary)
+
+                    Text("Use this shortcut while viewing a session to start or stop voice.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                Text("When disabled, the voice assistant will not start sessions and microphone permissions will not be requested.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
     }
 
     // MARK: - Language Tab (HAP-724)

@@ -271,10 +271,76 @@ class SessionViewModel: ObservableObject {
 | Sessions List | ✅ | NavigationSplitView with sidebar |
 | Session Detail | ✅ | Message display with tool uses |
 | Settings | ✅ | Tabbed preferences via Settings scene |
-| Menu Commands | ✅ | File, Session, Artifacts, Connection, Subscription menus |
-| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, ⇧⌘A artifacts, ⇧⌘U upgrade, etc. |
+| Menu Commands | ✅ | File, Session, Artifacts, Connection, Voice, Subscription menus |
+| Keyboard Shortcuts | ✅ | ⌘R refresh, ⌘N scan, ⇧⌘A artifacts, ⇧⌘V voice, etc. |
 | In-App Purchases | ✅ | RevenueCat SDK integration (HAP-707) |
 | Artifacts Browser | ✅ | File tree, QuickLook, drag-and-drop (HAP-704) |
+| Voice Features | ✅ | ElevenLabs Conversational AI integration (HAP-886) |
+| Voice UI | ✅ | VoiceViewModel, VoiceControlView, Settings tab (HAP-901) |
+
+### Voice Features (HAP-886)
+
+The app includes full ElevenLabs Conversational AI integration for voice assistant functionality:
+
+**Key Components:**
+- `VoiceService.swift` - ElevenLabs WebSocket integration with AVFoundation audio
+- `VoiceViewModel.swift` - Observable view model bridging VoiceService to UI (HAP-901)
+- `VoiceControlView.swift` - Floating voice indicator component (HAP-901)
+
+**Architecture:**
+- WebSocket connection to `wss://api.elevenlabs.io/v1/convai/conversation`
+- Audio capture via `AVAudioEngine` with 16kHz mono 16-bit PCM format
+- Audio playback via `AVAudioPlayerNode` for streaming TTS responses
+- Voice Activity Detection (VAD) with configurable polling interval
+
+**Message Protocol:**
+- Client events: `user_audio_chunk`, `user_message`, `contextual_update`, `ping`
+- Server events: `conversation_initiation_metadata`, `audio`, `user_transcript`, `agent_response`, `mode_change`, `interruption`
+
+**Features:**
+- Real-time voice conversation with ElevenLabs agent
+- Microphone permission handling via `AVCaptureDevice`
+- Mute/unmute controls for microphone input
+- Voice language selection (en, es, ru, pl, pt, ca, zh)
+- WebSocket keepalive with ping/pong
+- Automatic reconnection handling
+- Mode change tracking (speaking/listening/idle)
+- Input/output volume monitoring
+
+**Usage Example:**
+```swift
+let voiceService = VoiceService.shared
+
+// Start a voice session
+await voiceService.startSession(config: VoiceSessionConfig(
+    sessionId: "session-123",
+    initialContext: "User is viewing a coding session"
+))
+
+// Send a contextual update
+voiceService.sendContextualUpdate("User clicked on file.ts")
+
+// Toggle mute
+voiceService.toggleMute()
+
+// End the session
+await voiceService.endSession()
+```
+
+**Configuration:**
+- Development agent ID: `agent_7801k2c0r5hjfraa1kdbytpvs6yt`
+- Production agent ID: `agent_6701k211syvvegba4kt7m68nxjmw`
+- Audio sample rate: 16kHz
+- VAD polling interval: 0.1s
+- VAD volume threshold: 0.1
+
+**UI Integration (HAP-901):**
+- Voice button in SessionDetailView toolbar
+- VoiceControlView with speaking/listening/idle indicators
+- Volume level visualization for input/output
+- Mute/unmute controls
+- Settings → Voice tab for preferences and language selection
+- Keyboard shortcut: ⇧⌘V toggle voice, ⇧⌘M toggle mute
 
 ### In-App Purchases (HAP-707)
 
@@ -334,5 +400,6 @@ The app includes a native artifact browser for viewing files generated during Cl
 
 ### Next Steps (Phase 4)
 
-- Voice features integration
+- ~~Voice features integration~~ (Completed - HAP-886)
+- ~~Voice UI integration~~ (Completed - HAP-901)
 - Push notifications

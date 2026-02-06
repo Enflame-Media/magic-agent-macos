@@ -18,6 +18,9 @@ import UniformTypeIdentifiers
 /// - Decrypting artifact headers and bodies
 /// - Building and maintaining the file tree
 /// - Managing selection and loading states
+/// - Offline caching for disconnected viewing (HAP-874)
+///
+/// @see HAP-874 - Offline Artifact Caching
 @Observable
 final class ArtifactViewModel {
     // MARK: - State
@@ -42,6 +45,12 @@ final class ArtifactViewModel {
 
     /// Whether to show only code files.
     var showCodeOnly = false
+
+    /// Whether artifacts are loaded from cache (HAP-874).
+    var isOfflineMode = false
+
+    /// Cache statistics for UI display (HAP-874).
+    var cacheStats: ArtifactCacheStats?
 
     // MARK: - Computed Properties
 
@@ -120,6 +129,7 @@ final class ArtifactViewModel {
     func loadArtifacts(for sessionId: String) async {
         isLoading = true
         errorMessage = nil
+        isOfflineMode = false // Clear offline mode since we're fetching live data
 
         do {
             // Fetch artifacts from API
@@ -131,6 +141,11 @@ final class ArtifactViewModel {
             for apiArtifact in response.artifacts {
                 let artifact = try decryptArtifact(apiArtifact, with: encryptionKey)
                 artifactsMap[artifact.id] = artifact
+
+                // HAP-874: Cache decrypted artifact for offline access
+                Task {
+                    await cacheArtifact(artifact)
+                }
             }
 
             isLoading = false
@@ -144,6 +159,7 @@ final class ArtifactViewModel {
     func loadAllArtifacts() async {
         isLoading = true
         errorMessage = nil
+        isOfflineMode = false // Clear offline mode since we're fetching live data
 
         do {
             let response = try await apiService.fetchAllArtifacts()
@@ -152,6 +168,11 @@ final class ArtifactViewModel {
             for apiArtifact in response.artifacts {
                 let artifact = try decryptArtifact(apiArtifact, with: encryptionKey)
                 artifactsMap[artifact.id] = artifact
+
+                // HAP-874: Cache decrypted artifact for offline access
+                Task {
+                    await cacheArtifact(artifact)
+                }
             }
 
             isLoading = false
@@ -190,6 +211,11 @@ final class ArtifactViewModel {
             artifactsMap[id] = updatedArtifact
 
             loadingBodyIds.remove(id)
+
+            // HAP-874: Cache the body content for offline access
+            Task {
+                await cacheBody(id: id, body: body)
+            }
         } catch {
             loadingBodyIds.remove(id)
             // Don't set error message for body load failures, just log
@@ -286,6 +312,105 @@ final class ArtifactViewModel {
         selectedArtifactId = nil
         loadingBodyIds.removeAll()
         errorMessage = nil
+        isOfflineMode = false
+    }
+
+    // MARK: - Cache Operations (HAP-874)
+
+    /// Load cached artifacts for offline viewing.
+    func loadFromCache() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            try await ArtifactCacheService.shared.initialize()
+            let cachedArtifacts = try await ArtifactCacheService.shared.loadCachedArtifacts()
+
+            if !cachedArtifacts.isEmpty {
+                for artifact in cachedArtifacts {
+                    artifactsMap[artifact.id] = artifact
+                }
+                isOfflineMode = true
+                print("[artifacts] Loaded \(cachedArtifacts.count) artifacts from cache")
+            }
+
+            isLoading = false
+        } catch {
+            isLoading = false
+            print("[artifacts] Failed to load from cache: \(error.localizedDescription)")
+        }
+    }
+
+    /// Load cached artifacts for a specific session.
+    /// - Parameter sessionId: Session ID
+    func loadCachedForSession(_ sessionId: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            try await ArtifactCacheService.shared.initialize()
+            let cachedArtifacts = try await ArtifactCacheService.shared.getCachedForSession(sessionId: sessionId)
+
+            if !cachedArtifacts.isEmpty {
+                for artifact in cachedArtifacts {
+                    artifactsMap[artifact.id] = artifact
+                }
+                isOfflineMode = true
+                print("[artifacts] Loaded \(cachedArtifacts.count) cached artifacts for session \(sessionId)")
+            }
+
+            isLoading = false
+        } catch {
+            isLoading = false
+            print("[artifacts] Failed to load cached artifacts for session \(sessionId): \(error.localizedDescription)")
+        }
+    }
+
+    /// Cache an artifact after decryption.
+    /// - Parameter artifact: Artifact to cache
+    func cacheArtifact(_ artifact: Artifact) async {
+        do {
+            try await ArtifactCacheService.shared.cacheArtifact(artifact)
+        } catch {
+            print("[artifacts] Failed to cache artifact \(artifact.id): \(error.localizedDescription)")
+        }
+    }
+
+    /// Cache artifact body content.
+    /// - Parameters:
+    ///   - id: Artifact ID
+    ///   - body: Body content to cache
+    func cacheBody(id: String, body: String?) async {
+        do {
+            try await ArtifactCacheService.shared.cacheBody(id: id, body: body)
+        } catch {
+            print("[artifacts] Failed to cache body for \(id): \(error.localizedDescription)")
+        }
+    }
+
+    /// Clear the artifact cache.
+    func clearCache() async {
+        do {
+            try await ArtifactCacheService.shared.clearCache()
+            await refreshCacheStats()
+            print("[artifacts] Cache cleared")
+        } catch {
+            print("[artifacts] Failed to clear cache: \(error.localizedDescription)")
+        }
+    }
+
+    /// Refresh cache statistics.
+    func refreshCacheStats() async {
+        do {
+            cacheStats = try await ArtifactCacheService.shared.getStats()
+        } catch {
+            print("[artifacts] Failed to get cache stats: \(error.localizedDescription)")
+        }
+    }
+
+    /// Clear offline mode flag.
+    func clearOfflineMode() {
+        isOfflineMode = false
     }
 
     // MARK: - Private Methods
